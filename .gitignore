@@ -2,6 +2,10 @@
 node_modules
 dist
 
+# Test Coverage
+coverage
+.nyc_output
+
 # Environment
 .env
 .env.local

@@ -1,31 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Map as MapIcon, Settings, Route, Trash2, FileJson, Plus, ExternalLink, Database, Menu, X } from 'lucide-react';
 import L from 'leaflet';
-// --- Types ---
-
-interface LocationPoint {
-  lat: number;
-  lon: number;
-}
-
-interface LocationSegment {
-  start: LocationPoint;
-  end: LocationPoint;
-  lengthKm: number;
-}
-
-interface ExtractedData {
-  points: LocationPoint[];
-  segments: LocationSegment[];
-}
-
-interface FileRecord {
-  id: string;
-  name: string;
-  pointCount: number;
-  segmentCount: number;
-  data: ExtractedData;
-}
+import type { LocationPoint, LocationSegment, FileRecord } from './types';
+import { extractTimelineData } from './utils/timelineParser';
+import { getAllFilesFromDB, saveFileToDB, removeFileFromDB } from './utils/storage';
 
 // --- Styles & CSS ---
 
@@ -50,147 +28,6 @@ const styles = `
     background: #d1d5db; 
   }
 `;
-
-// --- IndexedDB Helper ---
-
-const DB_NAME = 'LocationFogDB';
-const STORE_NAME = 'files';
-const DB_VERSION = 1;
-
-const initDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      }
-    };
-  });
-};
-
-const saveFileToDB = async (file: FileRecord) => {
-  const db = await initDB();
-  return new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.put(file);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-};
-
-const removeFileFromDB = async (id: string) => {
-  const db = await initDB();
-  return new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-};
-
-const getAllFilesFromDB = async (): Promise<FileRecord[]> => {
-  const db = await initDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-};
-
-// --- Helper Functions ---
-
-const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const R = 6371; 
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-const parseGeoString = (geoStr: string): LocationPoint | null => {
-  if (!geoStr || !geoStr.startsWith('geo:')) return null;
-  const parts = geoStr.replace('geo:', '').split(',');
-  if (parts.length !== 2) return null;
-  const lat = parseFloat(parts[0]);
-  const lon = parseFloat(parts[1]);
-  if (isNaN(lat) || isNaN(lon)) return null;
-  return { lat, lon };
-};
-
-const extractData = (jsonData: any[]): ExtractedData => {
-  const points: LocationPoint[] = [];
-  const segments: LocationSegment[] = [];
-  
-  const getTime = (t: string | undefined) => t ? new Date(t).getTime() : 0;
-
-  const entries = jsonData.map(entry => {
-    let startLoc: LocationPoint | null = null;
-    let endLoc: LocationPoint | null = null;
-    let isPath = false;
-
-    if (entry.activity) {
-      if (entry.activity.start) startLoc = parseGeoString(entry.activity.start);
-      if (entry.activity.end) endLoc = parseGeoString(entry.activity.end);
-      isPath = true; 
-    } else if (entry.visit?.topCandidate?.placeLocation) {
-      const loc = parseGeoString(entry.visit.topCandidate.placeLocation);
-      startLoc = loc;
-      endLoc = loc;
-    }
-
-    return {
-      startTime: getTime(entry.startTime),
-      endTime: getTime(entry.endTime),
-      startLoc,
-      endLoc,
-      isPath
-    };
-  })
-  .filter(e => e.startLoc && e.endLoc)
-  .sort((a, b) => a.startTime - b.startTime);
-
-  for (let i = 0; i < entries.length; i++) {
-    const curr = entries[i];
-    
-    if (curr.startLoc) points.push(curr.startLoc);
-    if (curr.endLoc && (curr.endLoc.lat !== curr.startLoc?.lat || curr.endLoc.lon !== curr.startLoc?.lon)) {
-       points.push(curr.endLoc);
-    }
-
-    if (curr.isPath && curr.startLoc && curr.endLoc) {
-       segments.push({
-         start: curr.startLoc,
-         end: curr.endLoc,
-         lengthKm: calculateDistanceKm(curr.startLoc.lat, curr.startLoc.lon, curr.endLoc.lat, curr.endLoc.lon)
-       });
-    }
-
-    if (i > 0) {
-      const prev = entries[i - 1];
-      if (prev.endLoc && curr.startLoc) {
-        const gapDist = calculateDistanceKm(prev.endLoc.lat, prev.endLoc.lon, curr.startLoc.lat, curr.startLoc.lon);
-        segments.push({
-          start: prev.endLoc,
-          end: curr.startLoc,
-          lengthKm: gapDist
-        });
-      }
-    }
-  }
-
-  return { points, segments };
-};
 
 // --- Main Component ---
 
@@ -427,8 +264,9 @@ export default function App() {
                 reader.onload = (event) => {
                     try {
                     const json = JSON.parse(event.target?.result as string);
-                    if (Array.isArray(json)) {
-                        const data = extractData(json);
+                    const data = extractTimelineData(json);
+                    
+                    if (data.points.length > 0) {
                         resolve({
                             id: crypto.randomUUID(),
                             name: file.name,
@@ -437,13 +275,32 @@ export default function App() {
                             data: data
                         });
                     } else {
-                        resolve({ id: crypto.randomUUID(), name: `${file.name} (Invalid)`, pointCount: 0, segmentCount: 0, data: { points: [], segments: [] } });
+                        resolve({ 
+                            id: crypto.randomUUID(), 
+                            name: `${file.name} (No Data)`, 
+                            pointCount: 0, 
+                            segmentCount: 0, 
+                            data: { points: [], segments: [] } 
+                        });
                     }
                     } catch (err) {
-                        resolve({ id: crypto.randomUUID(), name: `${file.name} (Error)`, pointCount: 0, segmentCount: 0, data: { points: [], segments: [] } });
+                        console.error(`Error parsing ${file.name}:`, err);
+                        resolve({ 
+                            id: crypto.randomUUID(), 
+                            name: `${file.name} (Error)`, 
+                            pointCount: 0, 
+                            segmentCount: 0, 
+                            data: { points: [], segments: [] } 
+                        });
                     }
                 };
-                reader.onerror = () => resolve({ id: crypto.randomUUID(), name: `${file.name} (Read Error)`, pointCount: 0, segmentCount: 0, data: { points: [], segments: [] } });
+                reader.onerror = () => resolve({ 
+                    id: crypto.randomUUID(), 
+                    name: `${file.name} (Read Error)`, 
+                    pointCount: 0, 
+                    segmentCount: 0, 
+                    data: { points: [], segments: [] } 
+                });
                 reader.readAsText(file);
                 });
             });
