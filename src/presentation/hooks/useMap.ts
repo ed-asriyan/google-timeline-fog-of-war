@@ -3,7 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import L from 'leaflet';
 import { LocationPoint, LocationSegment } from '../../domain/entities';
-import { FogSettings } from '../../domain/value-objects';
+import { FogSettings, MapViewport } from '../../domain/value-objects';
 
 interface UseMapResult {
   mapContainerRef: React.RefObject<HTMLDivElement>;
@@ -14,7 +14,9 @@ interface UseMapResult {
 export function useMap(
   points: LocationPoint[],
   segments: LocationSegment[],
-  settings: FogSettings
+  settings: FogSettings,
+  viewport: MapViewport,
+  onViewportChange: (lat: number, lng: number, zoom: number) => void
 ): UseMapResult {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,7 +29,7 @@ export function useMap(
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
       attributionControl: false,
-    }).setView([47.6062, -122.3321], 11);
+    }).setView([viewport.lat, viewport.lng], viewport.zoom);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -36,13 +38,20 @@ export function useMap(
 
     L.control.attribution({ position: 'bottomright' }).addTo(map);
 
+    // Save viewport on move/zoom (with debouncing through moveend)
+    map.on('moveend', () => {
+      const center = map.getCenter();
+      const zoom = map.getZoom();
+      onViewportChange(center.lat, center.lng, zoom);
+    });
+
     mapInstanceRef.current = map;
 
     return () => {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
+  }, []); // Remove viewport deps to prevent recreation
 
   // Draw fog overlay
   const drawCanvas = useCallback(() => {
@@ -152,17 +161,6 @@ export function useMap(
       map.off('resize', drawCanvas);
     };
   }, [drawCanvas]);
-
-  // Center map on first point when data loads
-  useEffect(() => {
-    if (points.length > 0 && mapInstanceRef.current) {
-      const center = mapInstanceRef.current.getCenter();
-      if (center.lat === 47.6062 && center.lng === -122.3321) {
-        const first = points[0];
-        mapInstanceRef.current.setView([first.lat, first.lon], 11);
-      }
-    }
-  }, [points]);
 
   const centerOnPoint = useCallback((point: LocationPoint) => {
     if (mapInstanceRef.current) {

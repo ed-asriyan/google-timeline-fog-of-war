@@ -1,6 +1,6 @@
 // Application Layer: Settings management use case
 
-import { FogSettings } from '../domain/value-objects';
+import { FogSettings, MapViewport } from '../domain/value-objects';
 import { SettingsRepository } from '../infrastructure/repositories/settings-repository';
 
 /**
@@ -35,5 +35,20 @@ export class SettingsService {
     const defaults = FogSettings.default();
     this.repository.saveFogSettings(defaults);
     return defaults;
+  }
+
+  // Map viewport management
+  loadMapViewport(): MapViewport {
+    return this.repository.loadMapViewport();
+  }
+
+  saveMapViewport(viewport: MapViewport): void {
+    this.repository.saveMapViewport(viewport);
+  }
+
+  updateMapViewport(lat: number, lng: number, zoom: number): MapViewport {
+    const viewport = new MapViewport(lat, lng, zoom);
+    this.repository.saveMapViewport(viewport);
+    return viewport;
   }
 }

@@ -2,6 +2,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { LocationPoint, LocationSegment, TimelineData, TimelineFile } from '../domain/entities';
+import { MapViewport } from '../domain/value-objects';
 
 describe('Domain Entities', () => {
   describe('LocationPoint', () => {
@@ -71,6 +72,58 @@ describe('Domain Entities', () => {
       expect(restored.id).toBe(file.id);
       expect(restored.name).toBe(file.name);
       expect(restored.pointCount).toBe(file.pointCount);
+    });
+  });
+
+  describe('MapViewport', () => {
+    it('should create valid viewport', () => {
+      const viewport = new MapViewport(47.6062, -122.3321, 11);
+      expect(viewport.lat).toBe(47.6062);
+      expect(viewport.lng).toBe(-122.3321);
+      expect(viewport.zoom).toBe(11);
+    });
+
+    it('should reject invalid coordinates', () => {
+      expect(() => new MapViewport(91, 0, 11)).toThrow();
+      expect(() => new MapViewport(0, 181, 11)).toThrow();
+      expect(() => new MapViewport(47, -122, 0)).toThrow();
+      expect(() => new MapViewport(47, -122, 20)).toThrow();
+    });
+
+    it('should update center immutably', () => {
+      const viewport = new MapViewport(47.6062, -122.3321, 11);
+      const updated = viewport.withCenter(48.0, -123.0);
+      
+      expect(viewport.lat).toBe(47.6062);
+      expect(updated.lat).toBe(48.0);
+      expect(updated.lng).toBe(-123.0);
+      expect(updated.zoom).toBe(11);
+    });
+
+    it('should update zoom immutably', () => {
+      const viewport = new MapViewport(47.6062, -122.3321, 11);
+      const updated = viewport.withZoom(15);
+      
+      expect(viewport.zoom).toBe(11);
+      expect(updated.zoom).toBe(15);
+      expect(updated.lat).toBe(47.6062);
+    });
+
+    it('should serialize and deserialize', () => {
+      const viewport = new MapViewport(47.6062, -122.3321, 11);
+      const json = viewport.toJSON();
+      const restored = MapViewport.fromJSON(json);
+      
+      expect(restored.lat).toBe(viewport.lat);
+      expect(restored.lng).toBe(viewport.lng);
+      expect(restored.zoom).toBe(viewport.zoom);
+    });
+
+    it('should use defaults for missing JSON values', () => {
+      const viewport = MapViewport.fromJSON({});
+      expect(viewport.lat).toBe(47.6062);
+      expect(viewport.lng).toBe(-122.3321);
+      expect(viewport.zoom).toBe(11);
     });
   });
 });

@@ -1,10 +1,11 @@
 // Presentation Layer: Main Application Component
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { Menu } from 'lucide-react';
 import { ServiceContainer } from './infrastructure/service-container';
 import { useTimelineFiles } from './presentation/hooks/useTimelineFiles';
 import { useFogSettings } from './presentation/hooks/useFogSettings';
+import { useMapViewport } from './presentation/hooks/useMapViewport';
 import { useMap } from './presentation/hooks/useMap';
 import { SidePanel } from './presentation/components/SidePanel';
 import './index.css';
@@ -55,6 +56,8 @@ export default function App() {
     updateMaxLinkDistance,
   } = useFogSettings(settingsService);
 
+  const { viewport, updateViewport } = useMapViewport();
+
   // Aggregate data from all files
   const { points, segments } = useMemo(() => {
     const allPoints = files.flatMap(f => f.data.points);
@@ -63,7 +66,30 @@ export default function App() {
   }, [files]);
 
   // Map management
-  const { mapContainerRef, canvasRef } = useMap(points, segments, settings);
+  const { mapContainerRef, canvasRef, centerOnPoint } = useMap(
+    points, 
+    segments, 
+    settings,
+    viewport,
+    updateViewport
+  );
+
+  // Track previous file count to detect first upload
+  const prevFileCountRef = useRef(files.length);
+
+  // Jump to latest location when first file is uploaded
+  useEffect(() => {
+    const prevCount = prevFileCountRef.current;
+    const currentCount = files.length;
+    
+    // If we went from 0 to having files, center on latest point
+    if (prevCount === 0 && currentCount > 0 && points.length > 0) {
+      const latestPoint = points[points.length - 1];
+      centerOnPoint(latestPoint);
+    }
+    
+    prevFileCountRef.current = currentCount;
+  }, [files.length, points, centerOnPoint]);
 
   // File upload handler
   const handleFilesSelected = async (fileList: File[]) => {
