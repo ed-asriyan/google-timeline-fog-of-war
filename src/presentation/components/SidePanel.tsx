@@ -97,7 +97,7 @@ export function SidePanel({
         </div>
 
         {/* File List (Scrollable) */}
-        <div className="overflow-y-auto custom-scrollbar bg-gray-50/30 flex-1 min-h-0 md:max-h-48">
+        <div className="overflow-y-auto custom-scrollbar bg-gray-50/30 flex-1 min-h-[120px] md:max-h-48">
           <FileList files={files} loadingState={loadingState} onRemove={onRemoveFile} />
         </div>
 
