@@ -74,15 +74,27 @@ export default function App() {
     updateViewport
   );
 
-  // Track previous file count to detect first upload
+  // Track whether initial load is complete and previous file count
+  const initialLoadCompleteRef = useRef(false);
   const prevFileCountRef = useRef(files.length);
 
-  // Jump to latest location when first file is uploaded
+  // Mark initial load as complete once loading state is ready
   useEffect(() => {
+    if (loadingState === 'ready' && !initialLoadCompleteRef.current) {
+      initialLoadCompleteRef.current = true;
+      prevFileCountRef.current = files.length;
+    }
+  }, [loadingState, files.length]);
+
+  // Jump to latest location only when user uploads first files (not on initial load)
+  useEffect(() => {
+    // Skip if initial load not complete yet
+    if (!initialLoadCompleteRef.current) return;
+    
     const prevCount = prevFileCountRef.current;
     const currentCount = files.length;
     
-    // If we went from 0 to having files, center on latest point
+    // If we went from 0 to having files after initial load, center on latest point
     if (prevCount === 0 && currentCount > 0 && points.length > 0) {
       const latestPoint = points[points.length - 1];
       centerOnPoint(latestPoint);
