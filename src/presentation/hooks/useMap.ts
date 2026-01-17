@@ -21,6 +21,7 @@ export function useMap(
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const dragStartCenterRef = useRef<L.LatLng | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -149,17 +150,49 @@ export function useMap(
   // Bind redraw events
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    const canvas = canvasRef.current;
+    if (!map || !canvas) return;
 
     drawCanvas();
 
-    // Only redraw after movement ends, not during drag for smooth animation
-    map.on('moveend', drawCanvas);
+    // Store the map center when drag starts
+    const onMoveStart = () => {
+      dragStartCenterRef.current = map.getCenter();
+    };
+
+    // Move canvas during drag
+    const onMove = () => {
+      if (!dragStartCenterRef.current) return;
+      
+      // Calculate pixel offset from where canvas was drawn
+      const startPoint = map.latLngToContainerPoint(dragStartCenterRef.current);
+      const currentCenter = map.getCenter();
+      const currentPoint = map.latLngToContainerPoint(currentCenter);
+      
+      const offsetX = startPoint.x - currentPoint.x;
+      const offsetY = startPoint.y - currentPoint.y;
+      
+      // Move canvas by the offset
+      canvas.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    };
+
+    // Reset canvas position and redraw at new location
+    const onMoveEnd = () => {
+      dragStartCenterRef.current = null;
+      canvas.style.transform = '';
+      drawCanvas();
+    };
+
+    map.on('movestart', onMoveStart);
+    map.on('move', onMove);
+    map.on('moveend', onMoveEnd);
     map.on('zoomend', drawCanvas);
     map.on('resize', drawCanvas);
 
     return () => {
-      map.off('moveend', drawCanvas);
+      map.off('movestart', onMoveStart);
+      map.off('move', onMove);
+      map.off('moveend', onMoveEnd);
       map.off('zoomend', drawCanvas);
       map.off('resize', drawCanvas);
     };
