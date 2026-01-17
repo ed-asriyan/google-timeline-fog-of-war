@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { FileRecord } from '../types';
+import { TimelineFile, TimelineData } from '../domain/entities';
 
 // Mock IndexedDB for testing
-const mockDB = new Map<string, FileRecord>();
+const mockDB = new Map<string, TimelineFile>();
 
 describe('Storage (Mock)', () => {
   beforeEach(() => {
@@ -10,13 +10,11 @@ describe('Storage (Mock)', () => {
   });
 
   it('should save a file record', async () => {
-    const record: FileRecord = {
-      id: 'test-1',
-      name: 'test.json',
-      pointCount: 10,
-      segmentCount: 5,
-      data: { points: [], segments: [] }
-    };
+    const record = new TimelineFile(
+      'test-1',
+      'test.json',
+      new TimelineData([], [])
+    );
 
     mockDB.set(record.id, record);
     expect(mockDB.has('test-1')).toBe(true);
@@ -24,13 +22,11 @@ describe('Storage (Mock)', () => {
   });
 
   it('should remove a file record', async () => {
-    const record: FileRecord = {
-      id: 'test-2',
-      name: 'test2.json',
-      pointCount: 20,
-      segmentCount: 10,
-      data: { points: [], segments: [] }
-    };
+    const record = new TimelineFile(
+      'test-2',
+      'test2.json',
+      new TimelineData([], [])
+    );
 
     mockDB.set(record.id, record);
     expect(mockDB.has('test-2')).toBe(true);
@@ -40,21 +36,17 @@ describe('Storage (Mock)', () => {
   });
 
   it('should get all file records', async () => {
-    const record1: FileRecord = {
-      id: 'test-3',
-      name: 'test3.json',
-      pointCount: 30,
-      segmentCount: 15,
-      data: { points: [], segments: [] }
-    };
+    const record1 = new TimelineFile(
+      'test-3',
+      'test3.json',
+      new TimelineData([], [])
+    );
     
-    const record2: FileRecord = {
-      id: 'test-4',
-      name: 'test4.json',
-      pointCount: 40,
-      segmentCount: 20,
-      data: { points: [], segments: [] }
-    };
+    const record2 = new TimelineFile(
+      'test-4',
+      'test4.json',
+      new TimelineData([], [])
+    );
 
     mockDB.set(record1.id, record1);
     mockDB.set(record2.id, record2);

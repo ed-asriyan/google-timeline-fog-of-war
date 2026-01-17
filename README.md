@@ -6,9 +6,7 @@
 Gamify your travel history! This application visualizes your Google Timeline location history by clearing the "Fog of War" from the world map as you explore.
 
 **Live Demo:** [https://fogofwar.asriyan.me](https://fogofwar.asriyan.me)
-
 ## ✨ Features
-
 *   **Fog of War Mechanics**: The map is initially obscured. Your visited locations interactively clear the fog.
 *   **Multi-Format Support**: 📱 Works with both Android and iOS Google Timeline export formats.
 *   **Privacy First**: 🔒 **All processing happens locally in your browser.** Your location data is **never** uploaded to any server.
@@ -30,7 +28,6 @@ Gamify your travel history! This application visualizes your Google Timeline loc
     *   Use the controls to tweak the visual settings.
 
 ## 📊 Supported Formats
-
 The app automatically detects and parses both Google Timeline export formats:
 
 ### iOS Format
@@ -47,9 +44,8 @@ The app automatically detects and parses both Google Timeline export formats:
 Both formats are fully supported with zero configuration required - just upload your files!
 
 ## 🛠️ Development
-
 ### Prerequisites
-*   Node.js (v18+)
+*   Node.js (v24+)
 *   npm
 
 ### Installation
@@ -58,6 +54,25 @@ git clone https://github.com/ed-asriyan/google-timeline-fog-of-war.git
 cd google-timeline-fog-of-war
 npm ci
 ```
+
+## 🏗️ Code Structure
+```
+src/
+├── domain/               # Business logic (no dependencies)
+├── application/          # Use cases & services
+├── infrastructure/       # External systems (storage, parsers)
+└── presentation/         # UI components & hooks
+```
+
+### Key Modules
+- **domain/**: Core entities, value objects, domain services
+- **application/**: Timeline file service, settings service
+- **infrastructure/**: Timeline parsers (iOS/Android), repositories (IndexedDB, localStorage)
+- **presentation/**: React components, custom hooks
+
+**Architecture**: Clean Architecture / Domain-Driven Design  
+📖 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation  
+🔄 See [MIGRATION.md](MIGRATION.md) for migration guide
 
 ### Run Locally
 ```bash
@@ -85,7 +100,6 @@ npm run build
 ```
 
 ## 🏗️ Code Structure
-
 ```
 src/
 ├── App.tsx                      # Main application component
@@ -97,7 +111,6 @@ src/
 ```
 
 ### Key Modules
-
 - **timelineParser.ts**: Handles automatic detection and parsing of both Android and iOS Google Timeline formats
 - **storage.ts**: Manages IndexedDB operations for persistent local storage
 - **types.ts**: Shared TypeScript interfaces and types

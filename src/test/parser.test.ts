@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractTimelineData, detectTimelineFormat } from '../utils/timelineParser';
+import { TimelineParserFactory } from '../infrastructure/parsers/timeline-parser';
 
 describe('Timeline Parser', () => {
   describe('iOS Format', () => {
@@ -35,18 +35,18 @@ describe('Timeline Parser', () => {
     ];
 
     it('should detect iOS format', () => {
-      expect(detectTimelineFormat(iosData)).toBe('ios');
+      expect(TimelineParserFactory.detectFormat(iosData)).toBe('ios');
     });
 
     it('should extract points from iOS data', () => {
-      const result = extractTimelineData(iosData);
+      const result = TimelineParserFactory.parse(iosData);
       expect(result.points.length).toBeGreaterThan(0);
       expect(result.points[0]).toHaveProperty('lat');
       expect(result.points[0]).toHaveProperty('lon');
     });
 
     it('should extract segments from iOS activities', () => {
-      const result = extractTimelineData(iosData);
+      const result = TimelineParserFactory.parse(iosData);
       expect(result.segments.length).toBeGreaterThan(0);
       expect(result.segments[0]).toHaveProperty('start');
       expect(result.segments[0]).toHaveProperty('end');
@@ -54,14 +54,14 @@ describe('Timeline Parser', () => {
     });
 
     it('should parse visit locations correctly', () => {
-      const result = extractTimelineData(iosData);
+      const result = TimelineParserFactory.parse(iosData);
       const visitPoint = result.points[0];
       expect(visitPoint.lat).toBeCloseTo(47.620258, 5);
       expect(visitPoint.lon).toBeCloseTo(-122.356943, 5);
     });
 
     it('should parse activity start/end locations correctly', () => {
-      const result = extractTimelineData(iosData);
+      const result = TimelineParserFactory.parse(iosData);
       // Should have visit point + activity start + activity end + gap segment
       expect(result.points.length).toBeGreaterThanOrEqual(3);
     });
@@ -122,18 +122,18 @@ describe('Timeline Parser', () => {
     };
 
     it('should detect Android format', () => {
-      expect(detectTimelineFormat(androidData)).toBe('android');
+      expect(TimelineParserFactory.detectFormat(androidData)).toBe('android');
     });
 
     it('should extract points from Android data', () => {
-      const result = extractTimelineData(androidData);
+      const result = TimelineParserFactory.parse(androidData);
       expect(result.points.length).toBeGreaterThan(0);
       expect(result.points[0]).toHaveProperty('lat');
       expect(result.points[0]).toHaveProperty('lon');
     });
 
     it('should extract segments from Android activities', () => {
-      const result = extractTimelineData(androidData);
+      const result = TimelineParserFactory.parse(androidData);
       expect(result.segments.length).toBeGreaterThan(0);
       expect(result.segments[0]).toHaveProperty('start');
       expect(result.segments[0]).toHaveProperty('end');
@@ -141,14 +141,14 @@ describe('Timeline Parser', () => {
     });
 
     it('should parse latLng format correctly', () => {
-      const result = extractTimelineData(androidData);
+      const result = TimelineParserFactory.parse(androidData);
       const visitPoint = result.points[0];
       expect(visitPoint.lat).toBeCloseTo(47.6202577, 5);
       expect(visitPoint.lon).toBeCloseTo(-122.3569428, 5);
     });
 
     it('should handle timelinePath entries', () => {
-      const result = extractTimelineData(androidData);
+      const result = TimelineParserFactory.parse(androidData);
       // Should include points from timelinePath
       expect(result.points.length).toBeGreaterThanOrEqual(5);
     });
@@ -156,19 +156,19 @@ describe('Timeline Parser', () => {
 
   describe('Format Detection', () => {
     it('should detect unknown format for invalid data', () => {
-      expect(detectTimelineFormat(null)).toBe('unknown');
-      expect(detectTimelineFormat({})).toBe('unknown');
-      expect(detectTimelineFormat("string")).toBe('unknown');
+      expect(TimelineParserFactory.detectFormat(null)).toBe('unknown');
+      expect(TimelineParserFactory.detectFormat({})).toBe('unknown');
+      expect(TimelineParserFactory.detectFormat("string")).toBe('unknown');
     });
 
     it('should handle empty arrays', () => {
-      const result = extractTimelineData([]);
+      const result = TimelineParserFactory.parse([]);
       expect(result.points).toEqual([]);
       expect(result.segments).toEqual([]);
     });
 
     it('should handle empty semanticSegments', () => {
-      const result = extractTimelineData({ semanticSegments: [] });
+      const result = TimelineParserFactory.parse({ semanticSegments: [] });
       expect(result.points).toEqual([]);
       expect(result.segments).toEqual([]);
     });
@@ -187,7 +187,7 @@ describe('Timeline Parser', () => {
         }
       ];
       
-      const result = extractTimelineData(testData);
+      const result = TimelineParserFactory.parse(testData);
       expect(result.segments.length).toBeGreaterThan(0);
       expect(result.segments[0].lengthKm).toBeGreaterThan(0);
       // Distance should be small for nearby points
