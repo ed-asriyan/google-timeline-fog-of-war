@@ -106,6 +106,7 @@ export function useMap(
         if (segment.lengthKm > settings.maxLinkDistanceKm) continue;
 
         const { start, end } = segment;
+        // Skip segments completely outside viewport
         if (
           (start.lat < minLat && end.lat < minLat) ||
           (start.lat > maxLat && end.lat > maxLat) ||
@@ -127,6 +128,7 @@ export function useMap(
     // Draw points
     ctx.beginPath();
     for (const point of points) {
+      // Skip points outside viewport
       if (
         point.lat < minLat ||
         point.lat > maxLat ||
@@ -151,13 +153,14 @@ export function useMap(
 
     drawCanvas();
 
-    map.on('move', drawCanvas);
-    map.on('zoom', drawCanvas);
+    // Only redraw after movement ends, not during drag for smooth animation
+    map.on('moveend', drawCanvas);
+    map.on('zoomend', drawCanvas);
     map.on('resize', drawCanvas);
 
     return () => {
-      map.off('move', drawCanvas);
-      map.off('zoom', drawCanvas);
+      map.off('moveend', drawCanvas);
+      map.off('zoomend', drawCanvas);
       map.off('resize', drawCanvas);
     };
   }, [drawCanvas]);
