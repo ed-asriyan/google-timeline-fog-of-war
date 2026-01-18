@@ -45,7 +45,7 @@ export function SidePanel({
         absolute z-[500] flex flex-col gap-3 pointer-events-none transition-transform duration-300
         
         /* Mobile: Bottom Sheet */
-        bottom-0 left-0 w-full max-h-[60vh]
+        bottom-0 left-0 w-full max-h-[85vh]
         ${!isOpen ? 'translate-y-full' : 'translate-y-0'}
 
         /* Desktop: Top Left Panel */
@@ -78,27 +78,29 @@ export function SidePanel({
           </button>
         </div>
 
-        {/* Controls */}
-        <ControlPanel
-          settings={settings}
-          onRadiusChange={onRadiusChange}
-          onToggleRoads={onToggleRoads}
-          onMaxLinkDistanceChange={onMaxLinkDistanceChange}
-        />
+        {/* Scrollable Middle Area */}
+        <div className="flex-1 overflow-y-auto md:overflow-hidden custom-scrollbar flex flex-col min-h-0">
+          <ControlPanel
+            settings={settings}
+            onRadiusChange={onRadiusChange}
+            onToggleRoads={onToggleRoads}
+            onMaxLinkDistanceChange={onMaxLinkDistanceChange}
+          />
 
-        {/* File List Header */}
-        <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-100 flex justify-between items-center">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Source Files
-          </span>
-          <span className="text-xs text-gray-400">
-            {loadingState === 'loading' ? 'Restoring...' : `${files.length} loaded`}
-          </span>
-        </div>
+          {/* File List Header */}
+          <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-100 flex justify-between items-center flex-shrink-0 sticky top-0 md:static z-10 md:z-auto backdrop-blur-sm bg-gray-50/90 md:bg-gray-50">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              Source Files
+            </span>
+            <span className="text-xs text-gray-400">
+              {loadingState === 'loading' ? 'Restoring...' : `${files.length} loaded`}
+            </span>
+          </div>
 
-        {/* File List (Scrollable) */}
-        <div className="overflow-y-auto custom-scrollbar bg-gray-50/30 flex-1 min-h-[120px] md:max-h-48">
-          <FileList files={files} loadingState={loadingState} onRemove={onRemoveFile} />
+          {/* File List */}
+          <div className="bg-gray-50/30 md:overflow-y-auto md:custom-scrollbar md:flex-1 md:min-h-0 md:max-h-48">
+            <FileList files={files} loadingState={loadingState} onRemove={onRemoveFile} />
+          </div>
         </div>
 
         {/* Upload Button Area */}
