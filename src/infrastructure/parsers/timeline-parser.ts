@@ -11,6 +11,7 @@ interface TimelineEntry {
   startLoc?: LocationPoint;
   endLoc?: LocationPoint;
   isPath: boolean;
+  pathPoints?: LocationPoint[];
 }
 
 /**
@@ -30,7 +31,8 @@ export class IOSTimelineParser implements ITimelineParser {
     const first = data[0];
     return (
       first.activity?.start?.startsWith?.('geo:') ||
-      first.visit?.topCandidate?.placeLocation?.startsWith?.('geo:')
+      first.visit?.topCandidate?.placeLocation?.startsWith?.('geo:') ||
+      (Array.isArray(first.timelinePath) && first.timelinePath[0]?.point?.startsWith?.('geo:'))
     );
   }
 
@@ -51,6 +53,7 @@ export class IOSTimelineParser implements ITimelineParser {
     let startLoc: LocationPoint | null = null;
     let endLoc: LocationPoint | null = null;
     let isPath = false;
+    let pathPoints: LocationPoint[] | undefined = undefined;
 
     if (entry.activity) {
       startLoc = this.parseGeoString(entry.activity.start);
@@ -60,6 +63,17 @@ export class IOSTimelineParser implements ITimelineParser {
       const loc = this.parseGeoString(entry.visit.topCandidate.placeLocation);
       startLoc = loc;
       endLoc = loc;
+    } else if (entry.timelinePath && Array.isArray(entry.timelinePath)) {
+      const points = entry.timelinePath
+        .map((p: any) => this.parseGeoString(p.point))
+        .filter((p: LocationPoint | null): p is LocationPoint => p !== null);
+
+      if (points.length > 0) {
+        startLoc = points[0];
+        endLoc = points[points.length - 1];
+        isPath = points.length > 1;
+        pathPoints = points;
+      }
     }
 
     if (!startLoc || !endLoc) return null;
@@ -70,6 +84,7 @@ export class IOSTimelineParser implements ITimelineParser {
       startLoc,
       endLoc,
       isPath,
+      pathPoints,
     };
   }
 
@@ -92,16 +107,27 @@ export class IOSTimelineParser implements ITimelineParser {
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
 
-      if (curr.startLoc) {
-        points.push(curr.startLoc);
-      }
+      // If there are pathPoints, add all of them
+      if (curr.pathPoints && curr.pathPoints.length > 0) {
+        points.push(...curr.pathPoints);
+        
+        // Create segments between consecutive points in the path
+        for (let j = 0; j < curr.pathPoints.length - 1; j++) {
+          segments.push(GeographyService.createSegment(curr.pathPoints[j], curr.pathPoints[j + 1]));
+        }
+      } else {
+        // Original logic for non-path entries
+        if (curr.startLoc) {
+          points.push(curr.startLoc);
+        }
 
-      if (curr.endLoc && curr.startLoc && !curr.endLoc.equals(curr.startLoc)) {
-        points.push(curr.endLoc);
-      }
+        if (curr.endLoc && curr.startLoc && !curr.endLoc.equals(curr.startLoc)) {
+          points.push(curr.endLoc);
+        }
 
-      if (curr.isPath && curr.startLoc && curr.endLoc) {
-        segments.push(GeographyService.createSegment(curr.startLoc, curr.endLoc));
+        if (curr.isPath && curr.startLoc && curr.endLoc) {
+          segments.push(GeographyService.createSegment(curr.startLoc, curr.endLoc));
+        }
       }
 
       if (i > 0) {
@@ -141,6 +167,7 @@ export class AndroidTimelineParser implements ITimelineParser {
     let startLoc: LocationPoint | null = null;
     let endLoc: LocationPoint | null = null;
     let isPath = false;
+    let pathPoints: LocationPoint[] | undefined = undefined;
 
     if (entry.activity) {
       startLoc = this.parseLatLngString(entry.activity.start?.latLng);
@@ -159,6 +186,7 @@ export class AndroidTimelineParser implements ITimelineParser {
         startLoc = points[0];
         endLoc = points[points.length - 1];
         isPath = points.length > 1;
+        pathPoints = points;
       }
     }
 
@@ -170,6 +198,7 @@ export class AndroidTimelineParser implements ITimelineParser {
       startLoc,
       endLoc,
       isPath,
+      pathPoints,
     };
   }
 
@@ -192,16 +221,27 @@ export class AndroidTimelineParser implements ITimelineParser {
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
 
-      if (curr.startLoc) {
-        points.push(curr.startLoc);
-      }
+      // If there are pathPoints, add all of them
+      if (curr.pathPoints && curr.pathPoints.length > 0) {
+        points.push(...curr.pathPoints);
+        
+        // Create segments between consecutive points in the path
+        for (let j = 0; j < curr.pathPoints.length - 1; j++) {
+          segments.push(GeographyService.createSegment(curr.pathPoints[j], curr.pathPoints[j + 1]));
+        }
+      } else {
+        // Original logic for non-path entries
+        if (curr.startLoc) {
+          points.push(curr.startLoc);
+        }
 
-      if (curr.endLoc && curr.startLoc && !curr.endLoc.equals(curr.startLoc)) {
-        points.push(curr.endLoc);
-      }
+        if (curr.endLoc && curr.startLoc && !curr.endLoc.equals(curr.startLoc)) {
+          points.push(curr.endLoc);
+        }
 
-      if (curr.isPath && curr.startLoc && curr.endLoc) {
-        segments.push(GeographyService.createSegment(curr.startLoc, curr.endLoc));
+        if (curr.isPath && curr.startLoc && curr.endLoc) {
+          segments.push(GeographyService.createSegment(curr.startLoc, curr.endLoc));
+        }
       }
 
       if (i > 0) {
