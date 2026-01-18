@@ -54,7 +54,7 @@ export function ControlPanel({
             <Route
               className={`w-4 h-4 ${settings.showRoads ? 'text-blue-600' : 'text-gray-400'}`}
             />
-            <span className="text-sm font-medium text-gray-700">Connect Activities</span>
+            <span className="text-sm font-medium text-gray-700">Connect Dots</span>
           </div>
           <div
             className={`w-8 h-4 rounded-full relative transition-colors ${

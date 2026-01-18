@@ -18,7 +18,7 @@ export class FogSettings {
   }
 
   static default(): FogSettings {
-    return new FogSettings(0.1, false, 5);
+    return new FogSettings(0.1, false, 2);
   }
 
   withRadius(radiusKm: number): FogSettings {
