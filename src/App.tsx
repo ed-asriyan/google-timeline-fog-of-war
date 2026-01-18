@@ -8,6 +8,7 @@ import { useFogSettings } from './presentation/hooks/useFogSettings';
 import { useMapViewport } from './presentation/hooks/useMapViewport';
 import { useMap } from './presentation/hooks/useMap';
 import { SidePanel } from './presentation/components/SidePanel';
+import { getSharedFiles } from './utils/share-target';
 import './index.css';
 
 const styles = `
@@ -77,6 +78,22 @@ export default function App() {
   // Track whether initial load is complete and previous file count
   const initialLoadCompleteRef = useRef(false);
   const prevFileCountRef = useRef(files.length);
+  const sharedFilesCheckedRef = useRef(false);
+
+  // Check for shared files on mount (from PWA share target)
+  useEffect(() => {
+    const checkSharedFiles = async () => {
+      if (sharedFilesCheckedRef.current) return;
+      sharedFilesCheckedRef.current = true;
+      
+      const sharedFiles = await getSharedFiles();
+      if (sharedFiles.length > 0) {
+        await uploadFiles(sharedFiles);
+      }
+    };
+    
+    checkSharedFiles();
+  }, [uploadFiles]);
 
   // Mark initial load as complete once loading state is ready
   useEffect(() => {

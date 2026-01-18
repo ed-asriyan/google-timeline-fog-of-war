@@ -23,6 +23,7 @@ Gamify your travel history! This application visualizes your Google Timeline loc
     *   Open the app.
     *   Click "Add Google Timeline files".
     *   Select one or multiple JSON files (both Android and iOS formats are supported).
+    *   **OR** if installed as a PWA, share JSON files directly from your file manager - the app will appear as a share target!
 3.  **Explore**:
     *   Watch the fog vanish!
     *   Use the controls to tweak the visual settings.

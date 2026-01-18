@@ -8,19 +8,56 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'Google Timeline Fog of War',
-        short_name: 'Fog of War',
-        description: 'Gamify your travel history by revealing places you have visited.',
+        short_name: 'Timeline FOW',
+        description: 'Gamify your travel history by revealing places you have visited',
+        start_url: '/',
+        display: 'standalone',
+        background_color: '#ffffff',
         theme_color: '#ffffff',
         icons: [
           {
-            src: 'icon.svg',
-            sizes: '192x192 512x512',
-            type: 'image/svg+xml'
+            src: '/icon.svg',
+            sizes: 'any',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
+        ],
+        share_target: {
+          action: '/share-target',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            files: [
+              {
+                name: 'files',
+                accept: ['application/json', '.json']
+              }
+            ]
+          }
+        }
+      },
+      workbox: {
+        // Import our custom share target handler
+        importScripts: ['/sw-share-target.js'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.tile\.openstreetmap\.org\/.*/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'osm-tiles',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
           }
         ]
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ],

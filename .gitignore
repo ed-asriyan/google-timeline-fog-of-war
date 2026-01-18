@@ -1,6 +1,7 @@
 # Node
 node_modules
 dist
+dev-dist
 
 # Test Coverage
 coverage
