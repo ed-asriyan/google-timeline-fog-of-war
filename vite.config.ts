@@ -22,6 +22,38 @@ export default defineConfig({
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any maskable'
+          },
+          {
+            src: '/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any'
+          }
+        ],
+        screenshots: [
+          {
+            src: '/screenshots/1.png',
+            sizes: '2458x1588',
+            type: 'image/png',
+            form_factor: 'wide'
+          },
+          {
+            src: '/screenshots/2.png',
+            sizes: '1076x2151',
+            type: 'image/png',
+            form_factor: 'narrow'
+          },
+          {
+            src: '/screenshots/3.png',
+            sizes: '1076x2147',
+            type: 'image/png',
+            form_factor: 'narrow'
           }
         ],
         share_target: {

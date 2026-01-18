@@ -5,7 +5,14 @@
 
 Gamify your travel history! This application visualizes your Google Timeline location history by clearing the "Fog of War" from the world map as you explore.
 
-**Live Demo:** [https://fogofwar.asriyan.me](https://fogofwar.asriyan.me)
+<p align="center">
+    <b>Live Demo: <a href="https://fogofwar.asriyan.me" target="_blank">https://fogofwar.asriyan.me</a></b>
+</p>
+
+<p align="center">
+  <img src="public/screenshots/1.png" alt="screenshot" />
+</p>
+
 ## ✨ Features
 *   **Fog of War Mechanics**: The map is initially obscured. Your visited locations interactively clear the fog.
 *   **Multi-Format Support**: 📱 Works with both Android and iOS Google Timeline export formats.
