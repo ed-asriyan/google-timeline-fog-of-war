@@ -6,8 +6,8 @@ import { LocationPoint, LocationSegment } from '../../domain/entities';
 import { FogSettings, MapViewport } from '../../domain/value-objects';
 
 interface UseMapResult {
-  mapContainerRef: React.RefObject<HTMLDivElement>;
-  canvasRef: React.RefObject<HTMLCanvasElement>;
+  mapContainerRef: React.RefObject<HTMLDivElement | null>;
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   centerOnPoint: (point: LocationPoint) => void;
 }
 
