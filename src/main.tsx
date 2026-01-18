@@ -4,6 +4,10 @@ import App from './App'
 import 'leaflet/dist/leaflet.css'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
+import { analytics } from './infrastructure/analytics'
+
+// Initialize analytics
+analytics.init();
 
 // Register service worker for PWA functionality
 registerSW({

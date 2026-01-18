@@ -318,13 +318,3 @@ Test patterns without external dependencies
 
 **Flow**:
 User Action → Hook → Service → Repository → Domain
-
-## 🔄 Migration from Old Code
-
-Old monolithic `App.tsx` (582 lines) split into:
-- Domain layer: 3 files (entities, value objects, services)
-- Application layer: 2 files (use cases)
-- Infrastructure layer: 4 files (parsers, repositories, container)
-- Presentation layer: 8 files (hooks, components)
-
-**Result**: More files, but each is focused, testable, and maintainable.

@@ -80,7 +80,6 @@ src/
 
 **Architecture**: Clean Architecture / Domain-Driven Design  
 📖 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed documentation  
-🔄 See [MIGRATION.md](MIGRATION.md) for migration guide
 
 ### Run Locally
 ```bash
