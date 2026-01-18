@@ -8,6 +8,7 @@ import { useFogSettings } from './presentation/hooks/useFogSettings';
 import { useMapViewport } from './presentation/hooks/useMapViewport';
 import { useMap } from './presentation/hooks/useMap';
 import { SidePanel } from './presentation/components/SidePanel';
+import { AddressSearch } from './presentation/components/AddressSearch';
 import { getSharedFiles } from './utils/share-target';
 import './index.css';
 
@@ -67,7 +68,7 @@ export default function App() {
   }, [files]);
 
   // Map management
-  const { mapContainerRef, canvasRef, centerOnPoint } = useMap(
+  const { mapContainerRef, canvasRef, centerOnPoint, flyToLocation } = useMap(
     points, 
     segments, 
     settings,
@@ -167,6 +168,11 @@ export default function App() {
           <Menu className="w-6 h-6" />
         </button>
       )}
+
+      {/* Address Search (Top Center) */}
+      <div className="absolute z-[500] top-4 left-1/2 -translate-x-1/2 w-[90%] md:w-96 max-w-lg">
+        <AddressSearch onLocationSelect={flyToLocation} />
+      </div>
 
       {/* Map Container */}
       <div className="flex-1 relative isolate">
