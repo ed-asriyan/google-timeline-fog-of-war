@@ -65,6 +65,64 @@ describe('Timeline Parser', () => {
       // Should have visit point + activity start + activity end + gap segment
       expect(result.points.length).toBeGreaterThanOrEqual(3);
     });
+
+    it('should handle iOS timelinePath with many points', () => {
+      const expectedPoints = [
+        { lat: 18.532196, lon: 73.829529 },
+        { lat: 18.533230, lon: 73.829739 },
+        { lat: 18.529576, lon: 73.832626 },
+        { lat: 18.549497, lon: 73.902705 },
+        { lat: 18.549497, lon: 73.902705 },
+      ];
+
+      const iosTimelinePathData = [
+        {
+          "startTime": "2024-10-05T10:00:00.000-07:00",
+          "endTime": "2024-10-05T12:00:00.000-07:00",
+          "timelinePath": [
+            {
+              "point": "geo:18.532196,73.829529",
+              "durationMinutesOffsetFromStartTime": "18"
+            },
+            {
+              "point": "geo:18.533230,73.829739",
+              "durationMinutesOffsetFromStartTime": "92"
+            },
+            {
+              "point": "geo:18.529576,73.832626",
+              "durationMinutesOffsetFromStartTime": "93"
+            },
+            {
+              "point": "geo:18.549497,73.902705",
+              "durationMinutesOffsetFromStartTime": "111"
+            },
+            {
+              "point": "geo:18.549497,73.902705",
+              "durationMinutesOffsetFromStartTime": "111"
+            }
+          ]
+        }
+      ];
+
+      const result = TimelineParserFactory.parse(iosTimelinePathData);
+      
+      // Should parse all 5 points from the timelinePath
+      expect(result.points.length).toBe(5);
+      
+      // Verify each point is parsed correctly
+      expectedPoints.forEach((expected, index) => {
+        expect(result.points[index].lat).toBeCloseTo(expected.lat, 5);
+        expect(result.points[index].lon).toBeCloseTo(expected.lon, 5);
+      });
+      
+      // Should create 4 segments between consecutive points (n-1 segments for n points)
+      expect(result.segments.length).toBe(4);
+      
+      // Verify segments have valid distances (note: some may be 0 for duplicate points)
+      result.segments.forEach(segment => {
+        expect(segment.lengthKm).toBeGreaterThanOrEqual(0);
+      });
+    });
   });
 
   describe('Android Format', () => {
@@ -151,6 +209,121 @@ describe('Timeline Parser', () => {
       const result = TimelineParserFactory.parse(androidData);
       // Should include points from timelinePath
       expect(result.points.length).toBeGreaterThanOrEqual(5);
+    });
+
+    it('should handle timelinePath with many points', () => {
+      const expectedPoints = [
+        { lat: 47.6205084, lon: -122.3569236 },
+        { lat: 47.6202876, lon: -122.3566803 },
+        { lat: 47.619731, lon: -122.3568086 },
+        { lat: 47.6194173, lon: -122.3566953 },
+        { lat: 47.6193852, lon: -122.3565725 },
+        { lat: 47.6193694, lon: -122.356568 },
+        { lat: 47.6190279, lon: -122.3568431 },
+        { lat: 47.6185934, lon: -122.3558732 },
+        { lat: 47.6185918, lon: -122.3528953 },
+        { lat: 47.6171194, lon: -122.3488659 },
+        { lat: 47.6158909, lon: -122.3468127 },
+        { lat: 47.6143847, lon: -122.344269 },
+        { lat: 47.6095001, lon: -122.3375728 },
+        { lat: 47.6074547, lon: -122.3370821 },
+        { lat: 47.6061813, lon: -122.3396878 },
+        { lat: 47.6063375, lon: -122.3407017 },
+      ];
+
+      const timelinePathData = {
+        "semanticSegments": [
+          {
+            "startTime": "2024-10-05T14:00:00.000-07:00",
+            "endTime": "2024-10-05T16:00:00.000-07:00",
+            "timelinePath": [
+              {
+                "point": "47.6205084°, -122.3569236°",
+                "time": "2024-10-05T14:06:00.000-07:00"
+              },
+              {
+                "point": "47.6202876°, -122.3566803°",
+                "time": "2024-10-05T14:22:00.000-07:00"
+              },
+              {
+                "point": "47.619731°, -122.3568086°",
+                "time": "2024-10-05T14:25:00.000-07:00"
+              },
+              {
+                "point": "47.6194173°, -122.3566953°",
+                "time": "2024-10-05T14:26:00.000-07:00"
+              },
+              {
+                "point": "47.6193852°, -122.3565725°",
+                "time": "2024-10-05T14:29:00.000-07:00"
+              },
+              {
+                "point": "47.6193694°, -122.356568°",
+                "time": "2024-10-05T14:30:00.000-07:00"
+              },
+              {
+                "point": "47.6190279°, -122.3568431°",
+                "time": "2024-10-05T14:35:00.000-07:00"
+              },
+              {
+                "point": "47.6185934°, -122.3558732°",
+                "time": "2024-10-05T14:36:00.000-07:00"
+              },
+              {
+                "point": "47.6185918°, -122.3528953°",
+                "time": "2024-10-05T14:37:00.000-07:00"
+              },
+              {
+                "point": "47.6171194°, -122.3488659°",
+                "time": "2024-10-05T14:38:00.000-07:00"
+              },
+              {
+                "point": "47.6158909°, -122.3468127°",
+                "time": "2024-10-05T14:39:00.000-07:00"
+              },
+              {
+                "point": "47.6143847°, -122.344269°",
+                "time": "2024-10-05T14:40:00.000-07:00"
+              },
+              {
+                "point": "47.6095001°, -122.3375728°",
+                "time": "2024-10-05T14:44:00.000-07:00"
+              },
+              {
+                "point": "47.6074547°, -122.3370821°",
+                "time": "2024-10-05T14:46:00.000-07:00"
+              },
+              {
+                "point": "47.6061813°, -122.3396878°",
+                "time": "2024-10-05T14:50:00.000-07:00"
+              },
+              {
+                "point": "47.6063375°, -122.3407017°",
+                "time": "2024-10-05T14:52:00.000-07:00"
+              }
+            ]
+          }
+        ]
+      };
+
+      const result = TimelineParserFactory.parse(timelinePathData);
+      
+      // Should parse all 16 points from the timelinePath
+      expect(result.points.length).toBe(16);
+      
+      // Verify each point is parsed correctly
+      expectedPoints.forEach((expected, index) => {
+        expect(result.points[index].lat).toBeCloseTo(expected.lat, 5);
+        expect(result.points[index].lon).toBeCloseTo(expected.lon, 5);
+      });
+      
+      // Should create 15 segments between consecutive points (n-1 segments for n points)
+      expect(result.segments.length).toBe(15);
+      
+      // Verify segments have valid distances
+      result.segments.forEach(segment => {
+        expect(segment.lengthKm).toBeGreaterThan(0);
+      });
     });
   });
 

@@ -20,9 +20,11 @@ export function FileList({ files, loadingState, onRemove }: FileListProps) {
     );
   }
 
+  const sortedFiles = [...files].sort((a, b) => a.name.localeCompare(b.name));
+  
   return (
     <div className="divide-y divide-gray-100">
-      {files.map((file) => (
+      {sortedFiles.map((file) => (
         <div
           key={file.id}
           className="p-3 flex items-start justify-between group hover:bg-white transition-colors"

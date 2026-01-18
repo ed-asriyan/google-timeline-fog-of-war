@@ -54,26 +54,35 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
       <div className="flex flex-col gap-2 items-center text-[10px] text-gray-400">
         <p className="flex items-center gap-1 text-center leading-tight max-w-[90%] mx-auto opacity-75">
           <Database className="w-3 h-3 flex-shrink-0" />
-          Selected files processed and saved in browser only
+          <span>Your location data is <b>never</b> uploaded to any server</span>
         </p>
-        <a
-          href="https://support.google.com/maps/answer/6258979?co=GENIE.Platform%3DAndroid&oco=1#androidimport"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
-        >
-          <ExternalLink className="w-3 h-3" />
-          <u>How to get Google Timeline files on Android?</u>
-        </a>
-        <a
-          href="https://support.google.com/maps/answer/6258979?co=GENIE.Platform%3DiOS&oco=1#iosimport"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1 hover:text-blue-500 transition-colors"
-        >
-          <ExternalLink className="w-3 h-3" />
-          <u>How to get Google Timeline files on iPhone?</u>
-        </a>
+        <div>
+          <span>Export Google Timeline files:</span>
+          &nbsp;
+          <a
+            href="https://support.google.com/maps/answer/6258979?co=GENIE.Platform%3DAndroid&oco=1#androidimport"
+            target="_blank"
+            rel="noreferrer"
+            className="items-center gap-1 hover:text-blue-500 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3 inline" />
+            &nbsp;
+            <u>Android</u>
+          </a>
+          &nbsp;
+          <span>and</span>
+          &nbsp;
+          <a
+            href="https://support.google.com/maps/answer/6258979?co=GENIE.Platform%3DiOS&oco=1#iosimport"
+            target="_blank"
+            rel="noreferrer"
+            className="items-center gap-1 hover:text-blue-500 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3 inline" />
+            &nbsp;
+            <u>iOS</u>
+          </a>
+        </div>
       </div>
     </div>
   );

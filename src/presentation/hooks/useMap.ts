@@ -9,6 +9,7 @@ interface UseMapResult {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   centerOnPoint: (point: LocationPoint) => void;
+  flyToLocation: (lat: number, lon: number, zoom?: number) => void;
 }
 
 export function useMap(
@@ -204,9 +205,18 @@ export function useMap(
     }
   }, []);
 
+  const flyToLocation = useCallback((lat: number, lon: number, zoom: number = 15) => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([lat, lon], zoom, {
+        duration: 1.5,
+      });
+    }
+  }, []);
+
   return {
     mapContainerRef,
     canvasRef,
     centerOnPoint,
+    flyToLocation,
   };
 }

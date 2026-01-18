@@ -18,7 +18,7 @@ export class FogSettings {
   }
 
   static default(): FogSettings {
-    return new FogSettings(0.5, false, 50);
+    return new FogSettings(0.1, false, 2);
   }
 
   withRadius(radiusKm: number): FogSettings {
@@ -43,9 +43,9 @@ export class FogSettings {
 
   static fromJSON(json: any): FogSettings {
     return new FogSettings(
-      json.radiusKm ?? 0.5,
+      json.radiusKm ?? 0.1,
       json.showRoads ?? false,
-      json.maxLinkDistanceKm ?? 50
+      json.maxLinkDistanceKm ?? 5
     );
   }
 }

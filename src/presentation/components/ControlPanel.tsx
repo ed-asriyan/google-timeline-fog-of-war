@@ -29,16 +29,16 @@ export function ControlPanel({
             <Settings className="w-3 h-3" /> Visibility Radius
           </label>
           <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-            {settings.radiusKm} km
+            {Math.round(settings.radiusKm * 1000)} m
           </span>
         </div>
         <input
           type="range"
-          min="0.05"
-          max="5"
-          step="0.05"
-          value={settings.radiusKm}
-          onChange={(e) => onRadiusChange(parseFloat(e.target.value))}
+          min="0"
+          max="1000"
+          step="10"
+          value={settings.radiusKm * 1000}
+          onChange={(e) => onRadiusChange(parseFloat(e.target.value) / 1000)}
           className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
         />
       </div>
@@ -54,7 +54,7 @@ export function ControlPanel({
             <Route
               className={`w-4 h-4 ${settings.showRoads ? 'text-blue-600' : 'text-gray-400'}`}
             />
-            <span className="text-sm font-medium text-gray-700">Connect Activities</span>
+            <span className="text-sm font-medium text-gray-700">Connect Dots</span>
           </div>
           <div
             className={`w-8 h-4 rounded-full relative transition-colors ${
@@ -83,8 +83,8 @@ export function ControlPanel({
             </div>
             <input
               type="range"
-              min="1"
-              max="1000"
+              min="0"
+              max="100"
               step="1"
               value={settings.maxLinkDistanceKm}
               onChange={(e) => onMaxLinkDistanceChange(parseFloat(e.target.value))}
