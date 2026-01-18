@@ -3,6 +3,7 @@
 
 import { Settings, Route } from 'lucide-react';
 import { FogSettings } from '../../domain/value-objects';
+import { analytics } from '../../infrastructure/analytics';
 
 interface ControlPanelProps {
   settings: FogSettings;
@@ -38,7 +39,16 @@ export function ControlPanel({
           max="1000"
           step="10"
           value={settings.radiusKm * 1000}
-          onChange={(e) => onRadiusChange(parseFloat(e.target.value) / 1000)}
+          onChange={(e) => {
+            const newRadius = parseFloat(e.target.value) / 1000;
+            onRadiusChange(newRadius);
+          }}
+          onMouseUp={(e) => {
+            const target = e.target as HTMLInputElement;
+            analytics.track('Visibility Radius Changed', {
+              radiusMeters: Math.round(parseFloat(target.value)),
+            });
+          }}
           className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
         />
       </div>
@@ -48,7 +58,12 @@ export function ControlPanel({
         {/* Toggle */}
         <div
           className="flex items-center justify-between cursor-pointer group select-none"
-          onClick={onToggleRoads}
+          onClick={() => {
+            analytics.track('Connect Dots Toggled', {
+              enabled: !settings.showRoads,
+            });
+            onToggleRoads();
+          }}
         >
           <div className="flex items-center gap-2">
             <Route

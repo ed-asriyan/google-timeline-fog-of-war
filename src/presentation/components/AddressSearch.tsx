@@ -2,6 +2,7 @@
 
 import { Search, X, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { analytics } from '../../infrastructure/analytics';
 
 interface SearchResult {
   place_id: number;
@@ -82,6 +83,10 @@ export function AddressSearch({ onLocationSelect }: AddressSearchProps) {
   };
 
   const handleResultClick = (result: SearchResult) => {
+    analytics.track('Location Searched', {
+      // Don't track actual coordinates or full address for privacy
+      hasResult: true,
+    });
     onLocationSelect(parseFloat(result.lat), parseFloat(result.lon));
     setQuery(result.display_name);
     setShowResults(false);

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TimelineFile } from '../../domain/entities';
 import { TimelineFileService } from '../../application/timeline-file-service';
+import { analytics } from '../../infrastructure/analytics';
 
 type LoadingState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -34,8 +35,17 @@ export function useTimelineFiles(service: TimelineFileService) {
     try {
       const newFiles = await service.uploadFiles(fileList);
       setFiles(prev => [...prev, ...newFiles]);
+      
+      // Track successful file processing (aggregate stats only, no location data)
+      analytics.track('Files Processed', {
+        filesProcessed: newFiles.length,
+        totalPoints: newFiles.reduce((sum, f) => sum + f.pointCount, 0),
+      });
     } catch (error) {
       console.error('Failed to upload files:', error);
+      analytics.track('File Processing Failed', {
+        fileCount: fileList.length,
+      });
     } finally {
       setIsProcessing(false);
     }

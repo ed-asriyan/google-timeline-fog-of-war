@@ -3,6 +3,7 @@
 
 import { FileJson, Trash2 } from 'lucide-react';
 import { TimelineFile } from '../../domain/entities';
+import { analytics } from '../../infrastructure/analytics';
 
 interface FileListProps {
   files: TimelineFile[];
@@ -38,7 +39,12 @@ export function FileList({ files, loadingState, onRemove }: FileListProps) {
             </div>
           </div>
           <button
-            onClick={() => onRemove(file.id)}
+            onClick={() => {
+              analytics.track('File Deleted', {
+                pointCount: file.pointCount,
+              });
+              onRemove(file.id);
+            }}
             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
             title="Remove file"
           >

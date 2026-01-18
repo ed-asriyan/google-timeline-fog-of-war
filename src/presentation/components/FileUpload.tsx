@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react';
 import { Plus, Database, ExternalLink } from 'lucide-react';
+import { analytics } from '../../infrastructure/analytics';
 
 interface FileUploadProps {
   isProcessing: boolean;
@@ -13,7 +14,11 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onFilesSelected(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      analytics.track('Files Selected', {
+        fileCount: files.length,
+      });
+      onFilesSelected(files);
       if (inputRef.current) {
         inputRef.current.value = '';
       }
