@@ -2,7 +2,7 @@
 
 
 import { Settings, Route } from 'lucide-react';
-import { FogSettings } from '../../domain/value-objects';
+import { FogSettings } from '../../domains/settings';
 import { analytics } from '../../infrastructure/analytics';
 
 interface ControlPanelProps {
@@ -30,7 +30,7 @@ export function ControlPanel({
             <Settings className="w-3 h-3" /> Visibility Radius
           </label>
           <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-            {Math.round(settings.radiusKm * 1000)} m
+            {Math.round(settings.getRadius() * 1000)} m
           </span>
         </div>
         <input
@@ -38,7 +38,7 @@ export function ControlPanel({
           min="0"
           max="1000"
           step="10"
-          value={settings.radiusKm * 1000}
+          value={settings.getRadius() * 1000}
           onChange={(e) => {
             const newRadius = parseFloat(e.target.value) / 1000;
             onRadiusChange(newRadius);
@@ -60,40 +60,40 @@ export function ControlPanel({
           className="flex items-center justify-between cursor-pointer group select-none"
           onClick={() => {
             analytics.track('Connect Dots Toggled', {
-              enabled: !settings.showRoads,
+              enabled: !settings.getConnectPaths(),
             });
             onToggleRoads();
           }}
         >
           <div className="flex items-center gap-2">
             <Route
-              className={`w-4 h-4 ${settings.showRoads ? 'text-blue-600' : 'text-gray-400'}`}
+              className={`w-4 h-4 ${settings.getConnectPaths() ? 'text-blue-600' : 'text-gray-400'}`}
             />
             <span className="text-sm font-medium text-gray-700">Connect Dots</span>
           </div>
           <div
             className={`w-8 h-4 rounded-full relative transition-colors ${
-              settings.showRoads ? 'bg-blue-600' : 'bg-gray-300'
+              settings.getConnectPaths() ? 'bg-blue-600' : 'bg-gray-300'
             }`}
           >
             <div
               className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm`}
               style={{
-                transform: settings.showRoads ? 'translateX(1.125rem)' : 'translateX(0.125rem)',
+                transform: settings.getConnectPaths() ? 'translateX(1.125rem)' : 'translateX(0.125rem)',
               }}
             />
           </div>
         </div>
 
         {/* Path Length Slider (Conditional) */}
-        {settings.showRoads && (
+        {settings.getConnectPaths() && (
           <div className="space-y-2 animate-in slide-in-from-top-2 fade-in duration-200 pt-1">
             <div className="flex justify-between items-center">
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                 Max Link Distance
               </label>
               <span className="text-[10px] font-mono text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
-                {settings.maxLinkDistanceKm} km
+                {settings.getPathLengthKm()} km
               </span>
             </div>
             <input
@@ -101,7 +101,7 @@ export function ControlPanel({
               min="0"
               max="100"
               step="1"
-              value={settings.maxLinkDistanceKm}
+              value={settings.getPathLengthKm()}
               onChange={(e) => onMaxLinkDistanceChange(parseFloat(e.target.value))}
               className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />

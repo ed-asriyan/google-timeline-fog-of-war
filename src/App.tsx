@@ -3,6 +3,7 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { Menu } from 'lucide-react';
 import { ServiceContainer } from './infrastructure/service-container';
+import { MapBounds, LocationPoint } from './domains/map/value-objects';
 import { useTimelineFiles } from './presentation/hooks/useTimelineFiles';
 import { useFogSettings } from './presentation/hooks/useFogSettings';
 import { useMapViewport } from './presentation/hooks/useMapViewport';
@@ -54,18 +55,43 @@ export default function App() {
     isPanelOpen,
     setIsPanelOpen,
     updateRadius,
-    toggleRoads,
-    updateMaxLinkDistance,
+    toggleConnectPaths,
+    updatePathLength,
   } = useFogSettings(settingsService);
 
   const { viewport, updateViewport } = useMapViewport();
 
-  // Aggregate data from all files
+  // Query viewport data using grid-based spatial index
   const { points, segments } = useMemo(() => {
-    const allPoints = files.flatMap(f => f.data.points);
-    const allSegments = files.flatMap(f => f.data.segments);
-    return { points: allPoints, segments: allSegments };
-  }, [files]);
+    const map = timelineFileService.getMap();
+    
+    // Calculate generous bounds to ensure full viewport coverage
+    // Use exponential decay: at zoom 0 query world, at zoom 10+ query local area
+    const zoomFactor = Math.max(1, viewport.zoom);
+    const latRange = 180 / Math.pow(1.5, zoomFactor);
+    const lonRange = 360 / Math.pow(1.5, zoomFactor);
+    const pad = Math.max(5, settings.getRadius() / 111); // At least 5 degrees padding
+    
+    // Clamp to valid coordinate ranges
+    const minLat = Math.max(-90, viewport.lat - latRange - pad);
+    const maxLat = Math.min(90, viewport.lat + latRange + pad);
+    const minLon = Math.max(-180, viewport.lng - lonRange - pad);
+    const maxLon = Math.min(180, viewport.lng + lonRange + pad);
+    
+    const bounds = new MapBounds(
+      new LocationPoint(minLat, minLon),
+      new LocationPoint(maxLat, maxLon)
+    );
+    
+    const result = map.queryViewport(bounds);
+    return { points: result.points, segments: result.paths };
+  }, [timelineFileService, files, viewport, settings]);
+
+  // Get total statistics from map (not just viewport)
+  const totalStats = useMemo(() => {
+    const map = timelineFileService.getMap();
+    return map.getStatistics();
+  }, [timelineFileService, files]);
 
   // Map management
   const { mapContainerRef, canvasRef, centerOnPoint, flyToLocation } = useMap(
@@ -76,9 +102,9 @@ export default function App() {
     updateViewport
   );
 
-  // Track whether initial load is complete and previous file count
+  // Track whether initial load is complete and previous point count
   const initialLoadCompleteRef = useRef(false);
-  const prevFileCountRef = useRef(files.length);
+  const prevPointCountRef = useRef(0);
   const sharedFilesCheckedRef = useRef(false);
 
   // Check for shared files on mount (from PWA share target)
@@ -100,26 +126,26 @@ export default function App() {
   useEffect(() => {
     if (loadingState === 'ready' && !initialLoadCompleteRef.current) {
       initialLoadCompleteRef.current = true;
-      prevFileCountRef.current = files.length;
+      prevPointCountRef.current = points.length;
     }
-  }, [loadingState, files.length]);
+  }, [loadingState, points.length]);
 
-  // Jump to latest location only when user uploads first files (not on initial load)
+  // Jump to latest location when user adds first points (after initial load)
   useEffect(() => {
     // Skip if initial load not complete yet
     if (!initialLoadCompleteRef.current) return;
     
-    const prevCount = prevFileCountRef.current;
-    const currentCount = files.length;
+    const prevCount = prevPointCountRef.current;
+    const currentCount = points.length;
     
-    // If we went from 0 to having files after initial load, center on latest point
-    if (prevCount === 0 && currentCount > 0 && points.length > 0) {
+    // If we went from 0 points to having points, center on latest point
+    if (prevCount === 0 && currentCount > 0) {
       const latestPoint = points[points.length - 1];
       centerOnPoint(latestPoint);
     }
     
-    prevFileCountRef.current = currentCount;
-  }, [files.length, points, centerOnPoint]);
+    prevPointCountRef.current = currentCount;
+  }, [points, centerOnPoint]);
 
   // File upload handler
   const handleFilesSelected = async (fileList: File[]) => {
@@ -136,13 +162,13 @@ export default function App() {
         onClose={() => setIsPanelOpen(false)}
         settings={settings}
         onRadiusChange={updateRadius}
-        onToggleRoads={toggleRoads}
-        onMaxLinkDistanceChange={updateMaxLinkDistance}
+        onToggleRoads={toggleConnectPaths}
+        onMaxLinkDistanceChange={updatePathLength}
         files={files}
         loadingState={loadingState}
         isProcessing={isProcessing}
-        totalPoints={points.length}
-        totalSegments={segments.length}
+        totalPoints={totalStats.pointsCount}
+        totalSegments={totalStats.pathsCount}
         onFilesSelected={handleFilesSelected}
         onRemoveFile={removeFile}
       />

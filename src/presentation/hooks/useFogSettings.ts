@@ -1,7 +1,7 @@
 // Presentation Layer: Custom hook for fog settings
 
 import { useState, useCallback, useEffect } from 'react';
-import { FogSettings } from '../../domain/value-objects';
+import { FogSettings } from '../../domains/settings';
 import { SettingsService } from '../../application/settings-service';
 
 export function useFogSettings(service: SettingsService) {
@@ -21,19 +21,19 @@ export function useFogSettings(service: SettingsService) {
   }, []);
 
   const updateRadius = useCallback((radiusKm: number) => {
-    const newSettings = service.updateRadius(settings, radiusKm);
+    const newSettings = service.updateRadius(radiusKm);
     setSettings(newSettings);
-  }, [service, settings]);
+  }, [service]);
 
-  const toggleRoads = useCallback(() => {
-    const newSettings = service.toggleRoads(settings);
+  const toggleConnectPaths = useCallback(() => {
+    const newSettings = service.toggleConnectPaths();
     setSettings(newSettings);
-  }, [service, settings]);
+  }, [service]);
 
-  const updateMaxLinkDistance = useCallback((maxLinkDistanceKm: number) => {
-    const newSettings = service.updateMaxLinkDistance(settings, maxLinkDistanceKm);
+  const updatePathLength = useCallback((pathLengthKm: number) => {
+    const newSettings = service.updatePathLength(pathLengthKm);
     setSettings(newSettings);
-  }, [service, settings]);
+  }, [service]);
 
   const resetToDefaults = useCallback(() => {
     const newSettings = service.resetToDefaults();
@@ -45,8 +45,8 @@ export function useFogSettings(service: SettingsService) {
     isPanelOpen,
     setIsPanelOpen,
     updateRadius,
-    toggleRoads,
-    updateMaxLinkDistance,
+    toggleConnectPaths,
+    updatePathLength,
     resetToDefaults,
   };
 }

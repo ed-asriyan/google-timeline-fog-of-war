@@ -2,8 +2,8 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import L from 'leaflet';
-import { LocationPoint, LocationSegment } from '../../domain/entities';
-import { FogSettings, MapViewport } from '../../domain/value-objects';
+import { TimelinePoint, TimelinePath, LocationPoint } from '../../domains/map';
+import { FogSettings } from '../../domains/settings';
 
 interface UseMapResult {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -12,9 +12,15 @@ interface UseMapResult {
   flyToLocation: (lat: number, lon: number, zoom?: number) => void;
 }
 
+interface MapViewport {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
 export function useMap(
-  points: LocationPoint[],
-  segments: LocationSegment[],
+  points: TimelinePoint[],
+  segments: TimelinePath[],
   settings: FogSettings,
   viewport: MapViewport,
   onViewportChange: (lat: number, lng: number, zoom: number) => void
@@ -83,40 +89,26 @@ export function useMap(
     const metersPerPixel =
       (40075016.686 * Math.abs(Math.cos((center.lat * Math.PI) / 180))) /
       Math.pow(2, map.getZoom() + 8);
-    const pixelRadius = (settings.radiusKm * 1000) / metersPerPixel;
+    const pixelRadius = (settings.getRadius() * 1000) / metersPerPixel;
 
     if (pixelRadius < 0.5) {
       ctx.globalCompositeOperation = 'source-over';
       return;
     }
 
-    const bounds = map.getBounds();
-    const pad = settings.radiusKm / 111;
-    const minLat = bounds.getSouth() - pad;
-    const maxLat = bounds.getNorth() + pad;
-    const minLon = bounds.getWest() - pad;
-    const maxLon = bounds.getEast() + pad;
-
-    // Draw roads
-    if (settings.showRoads) {
+    // Draw roads (data is pre-filtered by grid query)
+    if (settings.getConnectPaths()) {
       ctx.beginPath();
       ctx.lineWidth = pixelRadius * 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
       for (const segment of segments) {
-        if (segment.lengthKm > settings.maxLinkDistanceKm) continue;
+        const lengthKm = segment.length;
+        if (lengthKm > settings.getPathLengthKm()) continue;
 
-        const { start, end } = segment;
-        // Skip segments completely outside viewport
-        if (
-          (start.lat < minLat && end.lat < minLat) ||
-          (start.lat > maxLat && end.lat > maxLat) ||
-          (start.lon < minLon && end.lon < minLon) ||
-          (start.lon > maxLon && end.lon > maxLon)
-        ) {
-          continue;
-        }
+        const start = segment.a;
+        const end = segment.b;
 
         const p1 = map.latLngToContainerPoint([start.lat, start.lon]);
         const p2 = map.latLngToContainerPoint([end.lat, end.lon]);
@@ -127,18 +119,9 @@ export function useMap(
       ctx.stroke();
     }
 
-    // Draw points
+    // Draw points (data is pre-filtered by grid query)
     ctx.beginPath();
     for (const point of points) {
-      // Skip points outside viewport
-      if (
-        point.lat < minLat ||
-        point.lat > maxLat ||
-        point.lon < minLon ||
-        point.lon > maxLon
-      )
-        continue;
-
       const pt = map.latLngToContainerPoint([point.lat, point.lon]);
       ctx.moveTo(pt.x + pixelRadius, pt.y);
       ctx.arc(pt.x, pt.y, pixelRadius, 0, Math.PI * 2);

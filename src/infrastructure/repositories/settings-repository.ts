@@ -1,11 +1,11 @@
 // Infrastructure Layer: Settings repository
 
-import { FogSettings, MapViewport } from '../../domain/value-objects';
+import { FogSettings, MapViewport } from '../../domains/settings';
 
 const SETTINGS_KEY_PREFIX = 'fog_settings_';
 
 /**
- * Repository for fog settings using localStorage
+ * Repository for fog settings and viewport using localStorage
  */
 export class SettingsRepository {
   private getKey(key: string): string {
@@ -14,7 +14,7 @@ export class SettingsRepository {
 
   saveFogSettings(settings: FogSettings): void {
     try {
-      localStorage.setItem(this.getKey('fog'), JSON.stringify(settings.toJSON()));
+      localStorage.setItem(this.getKey('fog'), JSON.stringify(settings.toJson()));
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -24,7 +24,7 @@ export class SettingsRepository {
     try {
       const saved = localStorage.getItem(this.getKey('fog'));
       if (saved) {
-        return FogSettings.fromJSON(JSON.parse(saved));
+        return FogSettings.fromJson(JSON.parse(saved));
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -32,19 +32,19 @@ export class SettingsRepository {
     return FogSettings.default();
   }
 
-  saveMapViewport(viewport: MapViewport): void {
+  saveViewport(viewport: MapViewport): void {
     try {
-      localStorage.setItem(this.getKey('viewport'), JSON.stringify(viewport.toJSON()));
+      localStorage.setItem(this.getKey('viewport'), JSON.stringify(viewport.toJson()));
     } catch (error) {
       console.error('Failed to save viewport:', error);
     }
   }
 
-  loadMapViewport(): MapViewport {
+  loadViewport(): MapViewport {
     try {
       const saved = localStorage.getItem(this.getKey('viewport'));
       if (saved) {
-        return MapViewport.fromJSON(JSON.parse(saved));
+        return MapViewport.fromJson(JSON.parse(saved));
       }
     } catch (error) {
       console.error('Failed to load viewport:', error);

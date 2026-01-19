@@ -1,13 +1,14 @@
 // Infrastructure Layer: Storage repository
 
-import { TimelineFile } from '../../domain/entities';
+import { Map } from '../../domains/map';
 
 const DB_NAME = 'LocationFogDB';
-const STORE_NAME = 'files';
-const DB_VERSION = 1;
+const STORE_NAME = 'map';
+const DB_VERSION = 2;
 
 /**
- * Repository for timeline files using IndexedDB
+ * Repository for map aggregate using IndexedDB
+ * Stores the entire map with all files and spatial indices
  */
 export class TimelineFileRepository {
   private async getDB(): Promise<IDBDatabase> {
@@ -17,6 +18,10 @@ export class TimelineFileRepository {
       request.onsuccess = () => resolve(request.result);
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        // Clean up old store if it exists
+        if (db.objectStoreNames.contains('files')) {
+          db.deleteObjectStore('files');
+        }
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         }
@@ -24,37 +29,30 @@ export class TimelineFileRepository {
     });
   }
 
-  async save(file: TimelineFile): Promise<void> {
+  async saveMap(map: Map): Promise<void> {
     const db = await this.getDB();
+    const mapData = map.toJson();
     return new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
-      const req = store.put(file.toJSON());
+      const req = store.put({ id: 'main', data: mapData });
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);
     });
   }
 
-  async remove(id: string): Promise<void> {
-    const db = await this.getDB();
-    return new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = () => reject(req.error);
-    });
-  }
-
-  async getAll(): Promise<TimelineFile[]> {
+  async loadMap(): Promise<Map> {
     const db = await this.getDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readonly');
       const store = tx.objectStore(STORE_NAME);
-      const req = store.getAll();
+      const req = store.get('main');
       req.onsuccess = () => {
-        const files = req.result.map((json: any) => TimelineFile.fromJSON(json));
-        resolve(files);
+        if (req.result && req.result.data) {
+          resolve(Map.fromJson(req.result.data));
+        } else {
+          resolve(Map.createEmpty());
+        }
       };
       req.onerror = () => reject(req.error);
     });

@@ -1,7 +1,6 @@
 // Infrastructure Layer: Timeline format parsers
 
-import { LocationPoint, LocationSegment, TimelineData } from '../../domain/entities';
-import { GeographyService } from '../../domain/services';
+import { TimelinePoint, TimelinePath, TimelineData, LocationPoint } from '../../domains/map';
 
 export type TimelineFormat = 'ios' | 'android' | 'unknown';
 
@@ -101,44 +100,64 @@ export class IOSTimelineParser implements ITimelineParser {
   }
 
   private buildTimelineData(entries: TimelineEntry[]): TimelineData {
-    const points: LocationPoint[] = [];
-    const segments: LocationSegment[] = [];
+    const points: TimelinePoint[] = [];
+    const paths: TimelinePath[] = [];
 
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
+      const timestamp = curr.startTime ? new Date(curr.startTime) : new Date();
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
-        points.push(...curr.pathPoints);
+        // Add all points from the path
+        for (const loc of curr.pathPoints) {
+          points.push(new TimelinePoint(loc.lat, loc.lon, timestamp));
+        }
         
-        // Create segments between consecutive points in the path
+        // Create paths between consecutive points in the path
         for (let j = 0; j < curr.pathPoints.length - 1; j++) {
-          segments.push(GeographyService.createSegment(curr.pathPoints[j], curr.pathPoints[j + 1]));
+          const a = new TimelinePoint(curr.pathPoints[j].lat, curr.pathPoints[j].lon, timestamp);
+          const b = new TimelinePoint(curr.pathPoints[j + 1].lat, curr.pathPoints[j + 1].lon, timestamp);
+          paths.push(new TimelinePath(a, b));
         }
       } else {
-        // Original logic for non-path entries
+        // Add start and end points
         if (curr.startLoc) {
-          points.push(curr.startLoc);
+          points.push(new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp));
         }
 
-        if (curr.endLoc && curr.startLoc && !curr.endLoc.equals(curr.startLoc)) {
-          points.push(curr.endLoc);
+        if (curr.endLoc && curr.startLoc) {
+          const distance = Math.sqrt(
+            Math.pow(curr.endLoc.lat - curr.startLoc.lat, 2) + 
+            Math.pow(curr.endLoc.lon - curr.startLoc.lon, 2)
+          );
+          if (distance > 0.0001) { // Roughly 11 meters
+            const endTime = curr.endTime ? new Date(curr.endTime) : timestamp;
+            points.push(new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, endTime));
+          }
         }
 
+        // Create path if this is a movement
         if (curr.isPath && curr.startLoc && curr.endLoc) {
-          segments.push(GeographyService.createSegment(curr.startLoc, curr.endLoc));
+          const a = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
+          const b = new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, curr.endTime ? new Date(curr.endTime) : timestamp);
+          paths.push(new TimelinePath(a, b));
         }
       }
 
+      // Connect to previous entry
       if (i > 0) {
         const prev = entries[i - 1];
+        const prevEndTime = prev.endTime ? new Date(prev.endTime) : new Date();
         if (prev.endLoc && curr.startLoc) {
-          segments.push(GeographyService.createSegment(prev.endLoc, curr.startLoc));
+          const a = new TimelinePoint(prev.endLoc.lat, prev.endLoc.lon, prevEndTime);
+          const b = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
+          paths.push(new TimelinePath(a, b));
         }
       }
     }
 
-    return new TimelineData(points, segments);
+    return new TimelineData(points, paths);
   }
 }
 
@@ -215,44 +234,64 @@ export class AndroidTimelineParser implements ITimelineParser {
   }
 
   private buildTimelineData(entries: TimelineEntry[]): TimelineData {
-    const points: LocationPoint[] = [];
-    const segments: LocationSegment[] = [];
+    const points: TimelinePoint[] = [];
+    const paths: TimelinePath[] = [];
 
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
+      const timestamp = curr.startTime ? new Date(curr.startTime) : new Date();
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
-        points.push(...curr.pathPoints);
+        // Add all points from the path
+        for (const loc of curr.pathPoints) {
+          points.push(new TimelinePoint(loc.lat, loc.lon, timestamp));
+        }
         
-        // Create segments between consecutive points in the path
+        // Create paths between consecutive points in the path
         for (let j = 0; j < curr.pathPoints.length - 1; j++) {
-          segments.push(GeographyService.createSegment(curr.pathPoints[j], curr.pathPoints[j + 1]));
+          const a = new TimelinePoint(curr.pathPoints[j].lat, curr.pathPoints[j].lon, timestamp);
+          const b = new TimelinePoint(curr.pathPoints[j + 1].lat, curr.pathPoints[j + 1].lon, timestamp);
+          paths.push(new TimelinePath(a, b));
         }
       } else {
-        // Original logic for non-path entries
+        // Add start and end points
         if (curr.startLoc) {
-          points.push(curr.startLoc);
+          points.push(new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp));
         }
 
-        if (curr.endLoc && curr.startLoc && !curr.endLoc.equals(curr.startLoc)) {
-          points.push(curr.endLoc);
+        if (curr.endLoc && curr.startLoc) {
+          const distance = Math.sqrt(
+            Math.pow(curr.endLoc.lat - curr.startLoc.lat, 2) + 
+            Math.pow(curr.endLoc.lon - curr.startLoc.lon, 2)
+          );
+          if (distance > 0.0001) { // Roughly 11 meters
+            const endTime = curr.endTime ? new Date(curr.endTime) : timestamp;
+            points.push(new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, endTime));
+          }
         }
 
+        // Create path if this is a movement
         if (curr.isPath && curr.startLoc && curr.endLoc) {
-          segments.push(GeographyService.createSegment(curr.startLoc, curr.endLoc));
+          const a = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
+          const b = new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, curr.endTime ? new Date(curr.endTime) : timestamp);
+          paths.push(new TimelinePath(a, b));
         }
       }
 
+      // Connect to previous entry
       if (i > 0) {
         const prev = entries[i - 1];
+        const prevEndTime = prev.endTime ? new Date(prev.endTime) : new Date();
         if (prev.endLoc && curr.startLoc) {
-          segments.push(GeographyService.createSegment(prev.endLoc, curr.startLoc));
+          const a = new TimelinePoint(prev.endLoc.lat, prev.endLoc.lon, prevEndTime);
+          const b = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
+          paths.push(new TimelinePath(a, b));
         }
       }
     }
 
-    return new TimelineData(points, segments);
+    return new TimelineData(points, paths);
   }
 }
 

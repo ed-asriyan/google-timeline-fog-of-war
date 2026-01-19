@@ -2,13 +2,13 @@
 
 
 import { FileJson, Trash2 } from 'lucide-react';
-import { TimelineFile } from '../../domain/entities';
+import { TimelineFile } from '../../domains/map';
 import { analytics } from '../../infrastructure/analytics';
 
 interface FileListProps {
   files: TimelineFile[];
   loadingState: 'idle' | 'loading' | 'ready' | 'error';
-  onRemove: (id: string) => void;
+  onRemove: (file: TimelineFile) => void;
 }
 
 export function FileList({ files, loadingState, onRemove }: FileListProps) {
@@ -25,33 +25,36 @@ export function FileList({ files, loadingState, onRemove }: FileListProps) {
   
   return (
     <div className="divide-y divide-gray-100">
-      {sortedFiles.map((file) => (
-        <div
-          key={file.id}
-          className="p-3 flex items-start justify-between group hover:bg-white transition-colors"
-        >
-          <div className="min-w-0 pr-2">
-            <div className="text-sm font-medium text-gray-700 truncate" title={file.name}>
-              {file.name}
-            </div>
-            <div className="text-xs text-gray-400 mt-0.5">
-              {file.pointCount.toLocaleString()} pts
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              analytics.track('File Deleted', {
-                pointCount: file.pointCount,
-              });
-              onRemove(file.id);
-            }}
-            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-            title="Remove file"
+      {sortedFiles.map((file) => {
+        const stats = file.data.getStatistics();
+        return (
+          <div
+            key={file.id}
+            className="p-3 flex items-start justify-between group hover:bg-white transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
+            <div className="min-w-0 pr-2">
+              <div className="text-sm font-medium text-gray-700 truncate" title={file.name}>
+                {file.name}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {stats.totalPoints.toLocaleString()} pts
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                analytics.track('File Deleted', {
+                  pointCount: stats.totalPoints,
+                });
+                onRemove(file);
+              }}
+              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+              title="Remove file"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

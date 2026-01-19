@@ -1,34 +1,42 @@
 // Application Layer: Settings management use case
 
-import { FogSettings, MapViewport } from '../domain/value-objects';
+import { FogSettings, MapViewport } from '../domains/settings';
 import { SettingsRepository } from '../infrastructure/repositories/settings-repository';
 
 /**
- * Use case for managing fog settings
+ * Use case for managing fog settings and viewport
  */
 export class SettingsService {
   constructor(private repository: SettingsRepository) {}
 
+  // Fog Settings
   loadSettings(): FogSettings {
     return this.repository.loadFogSettings();
   }
 
-  updateRadius(currentSettings: FogSettings, radiusKm: number): FogSettings {
-    const newSettings = currentSettings.withRadius(radiusKm);
-    this.repository.saveFogSettings(newSettings);
-    return newSettings;
+  updateRadius(radiusKm: number): FogSettings {
+    const settings = this.repository.loadFogSettings();
+    settings.setRadius(radiusKm);
+    this.repository.saveFogSettings(settings);
+    return settings;
   }
 
-  toggleRoads(currentSettings: FogSettings): FogSettings {
-    const newSettings = currentSettings.withShowRoads(!currentSettings.showRoads);
-    this.repository.saveFogSettings(newSettings);
-    return newSettings;
+  toggleConnectPaths(): FogSettings {
+    const settings = this.repository.loadFogSettings();
+    settings.setConnectPaths(!settings.getConnectPaths());
+    this.repository.saveFogSettings(settings);
+    return settings;
   }
 
-  updateMaxLinkDistance(currentSettings: FogSettings, maxLinkDistanceKm: number): FogSettings {
-    const newSettings = currentSettings.withMaxLinkDistance(maxLinkDistanceKm);
-    this.repository.saveFogSettings(newSettings);
-    return newSettings;
+  updatePathLength(pathLengthKm: number): FogSettings {
+    const settings = this.repository.loadFogSettings();
+    settings.setPathLengthKm(pathLengthKm);
+    this.repository.saveFogSettings(settings);
+    return settings;
+  }
+
+  saveSettings(settings: FogSettings): void {
+    this.repository.saveFogSettings(settings);
   }
 
   resetToDefaults(): FogSettings {
@@ -37,18 +45,33 @@ export class SettingsService {
     return defaults;
   }
 
-  // Map viewport management
-  loadMapViewport(): MapViewport {
-    return this.repository.loadMapViewport();
+  // Viewport Management
+  loadViewport(): MapViewport {
+    return this.repository.loadViewport();
   }
 
-  saveMapViewport(viewport: MapViewport): void {
-    this.repository.saveMapViewport(viewport);
+  updateViewport(viewport: MapViewport): void {
+    this.repository.saveViewport(viewport);
   }
 
-  updateMapViewport(lat: number, lng: number, zoom: number): MapViewport {
-    const viewport = new MapViewport(lat, lng, zoom);
-    this.repository.saveMapViewport(viewport);
-    return viewport;
+  updateViewportPosition(lat: number, lng: number): MapViewport {
+    const current = this.repository.loadViewport();
+    const updated = current.withPosition(lat, lng);
+    this.repository.saveViewport(updated);
+    return updated;
+  }
+
+  updateViewportZoom(zoom: number): MapViewport {
+    const current = this.repository.loadViewport();
+    const updated = current.withZoom(zoom);
+    this.repository.saveViewport(updated);
+    return updated;
+  }
+
+  updateViewportAll(lat: number, lng: number, zoom: number): MapViewport {
+    const current = this.repository.loadViewport();
+    const updated = current.withAll(lat, lng, zoom);
+    this.repository.saveViewport(updated);
+    return updated;
   }
 }

@@ -1,8 +1,8 @@
 // Tests for domain entities
 
 import { describe, it, expect } from 'vitest';
-import { LocationPoint, LocationSegment, TimelineData, TimelineFile } from '../domain/entities';
-import { MapViewport } from '../domain/value-objects';
+import { LocationPoint, LocationSegment, TimelineData, TimelineFile } from '../domains/entities';
+import { MapViewport } from '../domains/value-objects';
 
 describe('Domain Entities', () => {
   describe('LocationPoint', () => {

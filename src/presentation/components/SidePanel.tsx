@@ -2,11 +2,11 @@
 
 
 import { Map as MapIcon, X } from 'lucide-react';
-import { TimelineFile } from '../../domain/entities';
+import { TimelineFile } from '../../domains/map';
 import { ControlPanel } from './ControlPanel';
 import { FileList } from './FileList';
 import { FileUpload } from './FileUpload';
-import { FogSettings } from '../../domain/value-objects';
+import { FogSettings } from '../../domains/settings';
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ interface SidePanelProps {
   totalPoints: number;
   totalSegments: number;
   onFilesSelected: (files: File[]) => void;
-  onRemoveFile: (id: string) => void;
+  onRemoveFile: (file: TimelineFile) => void;
 }
 
 export function SidePanel({

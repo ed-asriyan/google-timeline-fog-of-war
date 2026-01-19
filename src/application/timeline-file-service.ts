@@ -1,14 +1,35 @@
 // Application Layer: File management use case
 
-import { TimelineFile, TimelineData } from '../domain/entities';
+import { Map, TimelineFile } from '../domains/map';
 import { TimelineFileRepository } from '../infrastructure/repositories/timeline-file-repository';
 import { TimelineParserFactory } from '../infrastructure/parsers/timeline-parser';
 
 /**
- * Use case for managing timeline files
+ * Use case for managing timeline files and map
  */
 export class TimelineFileService {
-  constructor(private repository: TimelineFileRepository) {}
+  private map: Map;
+
+  constructor(private repository: TimelineFileRepository) {
+    this.map = Map.createEmpty();
+  }
+
+  /**
+   * Initialize service by loading map from storage
+   */
+  async initialize(): Promise<Map> {
+    let a = new Date();
+    this.map = await this.repository.loadMap();
+    console.log('Init', new Date().getTime() - a.getTime());
+    return this.map;
+  }
+
+  /**
+   * Get current map
+   */
+  getMap(): Map {
+    return this.map;
+  }
 
   /**
    * Upload and process timeline files
@@ -19,13 +40,18 @@ export class TimelineFileService {
     for (const file of files) {
       try {
         const timelineFile = await this.processFile(file);
-        if (!timelineFile.data.isEmpty()) {
-          await this.repository.save(timelineFile);
+        const stats = timelineFile.data.getStatistics();
+        if (stats.totalPoints > 0 || stats.totalPaths > 0) {
+          this.map.addFile(timelineFile);
           processedFiles.push(timelineFile);
         }
       } catch (error) {
         console.error(`Failed to process file ${file.name}:`, error);
       }
+    }
+
+    if (processedFiles.length > 0) {
+      await this.repository.saveMap(this.map);
     }
 
     return processedFiles;
@@ -35,25 +61,23 @@ export class TimelineFileService {
    * Load all timeline files
    */
   async loadAll(): Promise<TimelineFile[]> {
-    return this.repository.getAll();
+    return this.map.getAllFiles();
   }
 
   /**
    * Remove a timeline file
    */
-  async remove(id: string): Promise<void> {
-    return this.repository.remove(id);
+  async remove(file: TimelineFile): Promise<void> {
+    this.map.removeFile(file);
+    await this.repository.saveMap(this.map);
   }
 
   /**
-   * Get aggregated timeline data from all files
+   * Clear all files
    */
-  async getAggregatedData(files: TimelineFile[]): Promise<TimelineData> {
-    if (files.length === 0) {
-      return new TimelineData([], []);
-    }
-
-    return files.reduce((acc, file) => acc.merge(file.data), new TimelineData([], []));
+  async clearAll(): Promise<void> {
+    this.map = Map.createEmpty();
+    await this.repository.saveMap(this.map);
   }
 
   /**
@@ -67,11 +91,7 @@ export class TimelineFileService {
         try {
           const json = JSON.parse(event.target?.result as string);
           const data = TimelineParserFactory.parse(json);
-          const timelineFile = new TimelineFile(
-            crypto.randomUUID(),
-            file.name,
-            data
-          );
+          const timelineFile = new TimelineFile(file.name, data);
           resolve(timelineFile);
         } catch (error) {
           reject(new Error(`Failed to parse ${file.name}: ${error}`));
