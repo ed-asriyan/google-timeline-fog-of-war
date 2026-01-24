@@ -15,7 +15,7 @@
   "dependencies": {
     "@amplitude/unified": "^1.0.0-beta.30",
     "leaflet": "^1.9.4",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^0.563.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
