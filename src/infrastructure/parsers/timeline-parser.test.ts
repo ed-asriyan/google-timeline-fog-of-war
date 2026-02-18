@@ -75,7 +75,6 @@ describe('Timeline Parser', () => {
         { lat: 18.533230, lon: 73.829739 },
         { lat: 18.529576, lon: 73.832626 },
         { lat: 18.549497, lon: 73.902705 },
-        { lat: 18.549497, lon: 73.902705 },
       ];
 
       const iosTimelinePathData = [
@@ -112,7 +111,7 @@ describe('Timeline Parser', () => {
       const paths = result.getPaths();
       
       // Should parse all 5 points from the timelinePath
-      expect(points.length).toBe(5);
+      expect(points.length).toBe(4);
       
       // Verify each point is parsed correctly
       expectedPoints.forEach((expected, index) => {

@@ -1,8 +1,3 @@
-/**
- * Tests for MapSegment
- */
-
-import { describe, it, expect, beforeEach } from 'vitest';
 import { MapSegment } from './MapSegment';
 import { TimelinePoint } from './TimelinePoint';
 import { TimelinePath } from './TimelinePath';
@@ -23,35 +18,9 @@ describe('MapSegment', () => {
         path2 = new TimelinePath(point2, point3);
     });
 
-    describe('createEmpty', () => {
-        it('should create an empty segment', () => {
-            const segment = MapSegment.createEmpty();
-
-            expect(segment).toBeInstanceOf(MapSegment);
-        });
-
-        it('should have no points initially', () => {
-            const segment = MapSegment.createEmpty();
-            expect(segment.getPoints()).toEqual([]);
-        });
-
-        it('should have no paths initially', () => {
-            const segment = MapSegment.createEmpty();
-            expect(segment.getPaths()).toEqual([]);
-        });
-
-        it('should have zero statistics initially', () => {
-            const segment = MapSegment.createEmpty();
-            const stats = segment.getStatistics();
-
-            expect(stats.totalPoints).toBe(0);
-            expect(stats.totalPaths).toBe(0);
-        });
-    });
-
     describe('addPoints', () => {
         it('should add a single point', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1);
 
             const points = segment.getPoints();
@@ -61,7 +30,7 @@ describe('MapSegment', () => {
         });
 
         it('should add multiple points', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2, point3);
 
             const points = segment.getPoints();
@@ -70,7 +39,7 @@ describe('MapSegment', () => {
         });
 
         it('should handle adding duplicate points', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1);
             segment.addPoints(point1);
 
@@ -82,7 +51,7 @@ describe('MapSegment', () => {
 
     describe('addPaths', () => {
         it('should add a single path', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1);
 
             const paths = segment.getPaths();
@@ -92,7 +61,7 @@ describe('MapSegment', () => {
         });
 
         it('should add multiple paths', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1, path2);
 
             const paths = segment.getPaths();
@@ -101,7 +70,7 @@ describe('MapSegment', () => {
         });
 
         it('should update statistics when adding paths', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1, path2);
 
             const stats = segment.getStatistics();
@@ -112,7 +81,7 @@ describe('MapSegment', () => {
 
     describe('removePoints', () => {
         it('should remove a point', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2);
             segment.removePoints(point1);
 
@@ -123,7 +92,7 @@ describe('MapSegment', () => {
         });
 
         it('should remove multiple points', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2, point3);
             segment.removePoints(point1, point3);
 
@@ -134,7 +103,7 @@ describe('MapSegment', () => {
         });
 
         it('should update statistics when removing points', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2);
             segment.removePoints(point1);
 
@@ -144,7 +113,7 @@ describe('MapSegment', () => {
         });
 
         it('should handle removing non-existent point gracefully', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1);
 
             expect(() => segment.removePoints(point2)).not.toThrow();
@@ -155,7 +124,7 @@ describe('MapSegment', () => {
 
     describe('removePaths', () => {
         it('should remove a path', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1, path2);
             segment.removePaths(path1);
 
@@ -166,7 +135,7 @@ describe('MapSegment', () => {
         });
 
         it('should remove multiple paths', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1, path2);
             segment.removePaths(path1, path2);
 
@@ -175,7 +144,7 @@ describe('MapSegment', () => {
         });
 
         it('should update statistics when removing paths', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1, path2);
             segment.removePaths(path1);
 
@@ -185,7 +154,7 @@ describe('MapSegment', () => {
         });
 
         it('should handle removing non-existent path gracefully', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1);
 
             expect(() => segment.removePaths(path2)).not.toThrow();
@@ -195,7 +164,7 @@ describe('MapSegment', () => {
 
     describe('getPoints', () => {
         it('should return all points in segment', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2);
 
             const points = segment.getPoints();
@@ -204,14 +173,14 @@ describe('MapSegment', () => {
         });
 
         it('should return empty array for empty segment', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             expect(segment.getPoints()).toEqual([]);
         });
     });
 
     describe('getPaths', () => {
         it('should return all paths in segment', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPaths(path1, path2);
 
             const paths = segment.getPaths();
@@ -220,14 +189,14 @@ describe('MapSegment', () => {
         });
 
         it('should return empty array for empty segment', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             expect(segment.getPaths()).toEqual([]);
         });
     });
 
     describe('getStatistics', () => {
         it('should return accurate statistics', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2);
             segment.addPaths(path1);
 
@@ -237,7 +206,7 @@ describe('MapSegment', () => {
         });
 
         it('should reflect changes after additions and removals', () => {
-            const segment = MapSegment.createEmpty();
+            const segment = new MapSegment(0);
             segment.addPoints(point1, point2, point3);
             segment.addPaths(path1, path2);
             segment.removePoints(point1);

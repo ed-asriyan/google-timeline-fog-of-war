@@ -1,7 +1,7 @@
 // Application Layer: Settings management use case
 
-import { FogSettings, MapViewport } from '../domains/settings';
-import { SettingsRepository } from '../infrastructure/repositories/settings-repository';
+import { SettingsRepository } from '@/domains/ports';
+import { FogSettings, MapViewport } from '@/domains/settings';
 
 /**
  * Use case for managing fog settings and viewport

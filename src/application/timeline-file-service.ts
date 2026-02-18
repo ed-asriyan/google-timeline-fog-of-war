@@ -1,89 +1,113 @@
 // Application Layer: File management use case
 
-import { Map, TimelineFile } from '../domains/map';
-import { TimelineFileRepository } from '../infrastructure/repositories/timeline-file-repository';
-import { TimelineParserFactory } from '../infrastructure/parsers/timeline-parser';
+import { Map, MapBounds, TimelineGroup } from '@/domains/map';
+import { MapSegment } from '@/domains/map/MapSegment';
+import { MapSegmentRepository } from '@/domains/ports';
+import { TimelineParserFactory } from '@/infrastructure/parsers/timeline-parser';
+
+class SegmentsCache {
+  private cache: Record<number, MapSegment>;
+  private readonly maxCacheSize: number;
+  private repository: MapSegmentRepository;
+
+  constructor(repository: MapSegmentRepository, maxCacheSize: number) {
+    this.maxCacheSize = maxCacheSize;
+    this.cache = {};
+    this.repository = repository;
+  }
+
+  async invalidate(): Promise<void> {
+    this.cache = {};
+  }
+
+  async loadSegment(id: number): Promise<MapSegment> {
+    if (this.cache[id]) {
+      return this.cache[id];
+    }
+
+    const segment = await this.repository.loadSegment(id);
+    if (Object.keys(this.cache).length >= this.maxCacheSize) {
+      this.invalidateCache();
+    }
+    this.cache[id] = segment;
+    return segment;
+  }
+
+  async invalidateCache(): Promise<void> {
+    this.cache = {};
+  }
+
+  async flushSegment(id: number): Promise<void> {
+    const segment = this.cache[id];
+    if (segment) {
+      await this.repository.saveSegment(segment);
+    }
+  }
+
+  async flushAll(): Promise<void> {
+    await Promise.all(Object.keys(this.cache).map(id => this.flushSegment(Number(id))));
+  }
+}
 
 /**
  * Use case for managing timeline files and map
  */
 export class TimelineFileService {
-  private map: Map;
+  private map: Map = new Map();;
+  private cache: SegmentsCache;
+  private repository: MapSegmentRepository;
 
-  constructor(private repository: TimelineFileRepository) {
-    this.map = Map.createEmpty();
+  constructor(repository: MapSegmentRepository) {
+    this.repository = repository;
+    this.cache = new SegmentsCache(this.repository, 100);
+
   }
 
-  /**
-   * Initialize service by loading map from storage
-   */
-  async initialize(): Promise<Map> {
-    let a = new Date();
-    this.map = await this.repository.loadMap();
-    console.log('Init', new Date().getTime() - a.getTime());
-    return this.map;
-  }
+  async queryViewport(bounds: MapBounds): Promise<TimelineGroup> {
+    const segmentIds = this.map.getSegmentIdsForBound(bounds);
 
-  /**
-   * Get current map
-   */
-  getMap(): Map {
-    return this.map;
+    const mapSegments = await Promise.all(segmentIds.map(id => this.cache.loadSegment(id)));
+
+    const result = mapSegments.reduce((result: TimelineGroup, segment: MapSegment) => {
+      result.mergeFrom(segment);
+      return result;
+    }, new TimelineGroup());
+
+    return result;
   }
 
   /**
    * Upload and process timeline files
    */
-  async uploadFiles(files: File[]): Promise<TimelineFile[]> {
-    const processedFiles: TimelineFile[] = [];
+  async uploadFile(file: File): Promise<void> {
+    await this.cache.invalidate();
+    const cache = new SegmentsCache(this.repository, Infinity);
 
-    for (const file of files) {
-      try {
-        const timelineFile = await this.processFile(file);
-        const stats = timelineFile.data.getStatistics();
-        if (stats.totalPoints > 0 || stats.totalPaths > 0) {
-          this.map.addFile(timelineFile);
-          processedFiles.push(timelineFile);
-        }
-      } catch (error) {
-        console.error(`Failed to process file ${file.name}:`, error);
-      }
+    const timelineGroup = await this.processFile(file);
+
+    for (const [segmentId, points] of Object.entries(this.map.getSegmentIdForPoints(timelineGroup.points))) {
+      const segment = await cache.loadSegment(Number(segmentId));
+      segment.addPoints(...points);
     }
 
-    if (processedFiles.length > 0) {
-      await this.repository.saveMap(this.map);
+    for (const [segmentId, paths] of Object.entries(this.map.getSegmentIdsForPaths(timelineGroup.paths))) {
+      const segment = await cache.loadSegment(Number(segmentId));
+      segment.addPaths(...paths);
     }
 
-    return processedFiles;
+    await cache.flushAll();
   }
 
-  /**
-   * Load all timeline files
-   */
-  async loadAll(): Promise<TimelineFile[]> {
-    return this.map.getAllFiles();
-  }
-
-  /**
-   * Remove a timeline file
-   */
-  async remove(file: TimelineFile): Promise<void> {
-    this.map.removeFile(file);
-    await this.repository.saveMap(this.map);
-  }
-
-  /**
-   * Clear all files
-   */
   async clearAll(): Promise<void> {
-    this.map = Map.createEmpty();
-    await this.repository.saveMap(this.map);
+    await this.cache.invalidate();
+    await this.repository.clear();
   }
 
-  /**
-   * Process a single file
-   */
-  private async processFile(file: File): Promise<TimelineFile> {
+  async hasData(): Promise<boolean> {
+    return this.repository.hasData();
+  }
+
+  private async processFile(file: File): Promise<TimelineGroup> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -91,8 +115,7 @@ export class TimelineFileService {
         try {
           const json = JSON.parse(event.target?.result as string);
           const data = TimelineParserFactory.parse(json);
-          const timelineFile = new TimelineFile(file.name, data);
-          resolve(timelineFile);
+          resolve(data);
         } catch (error) {
           reject(new Error(`Failed to parse ${file.name}: ${error}`));
         }

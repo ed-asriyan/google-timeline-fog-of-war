@@ -5,6 +5,10 @@ import 'leaflet/dist/leaflet.css'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { analytics } from './infrastructure/analytics'
+import { IndexedDbMapSegmentRepository } from './infrastructure/repositories/IndexedDbMapSegmentRepository'
+import { LocalStorageSettingsRepository } from './infrastructure/repositories/LocalStorageSettingsRepository'
+import { TimelineFileService } from './application/timeline-file-service'
+import { SettingsService } from './application/settings-service'
 
 // Initialize analytics
 analytics.init();
@@ -37,8 +41,17 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+// Create infrastructure and application objects, then render
+IndexedDbMapSegmentRepository.openDb().then(mapSegmentRepository => {
+  const settingsRepository = new LocalStorageSettingsRepository();
+  const timelineFileService = new TimelineFileService(mapSegmentRepository);
+  const settingsService = new SettingsService(settingsRepository);
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <App timelineFileService={timelineFileService} settingsService={settingsService} />
+    </React.StrictMode>,
+  );
+}).catch(err => {
+  console.error('Failed to initialize app:', err);
+});

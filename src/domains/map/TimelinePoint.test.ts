@@ -51,4 +51,80 @@ describe('TimelinePoint', () => {
       expect(distance).toBeLessThan(240);
     });
   });
+
+  describe('key', () => {
+    it('returns the same key for the same values', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a = new TimelinePoint(48.8566, 2.3522, ts);
+      const b = new TimelinePoint(48.8566, 2.3522, ts);
+
+      expect(a.key()).toBe(b.key());
+    });
+
+    it('returns different keys for different latitudes', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      expect(new TimelinePoint(1, 0, ts).key()).not.toBe(new TimelinePoint(2, 0, ts).key());
+    });
+
+    it('returns different keys for different longitudes', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      expect(new TimelinePoint(0, 1, ts).key()).not.toBe(new TimelinePoint(0, 2, ts).key());
+    });
+
+    it('returns different keys for different timestamps', () => {
+      const a = new TimelinePoint(0, 0, new Date('2024-01-01T00:00:00.000Z'));
+      const b = new TimelinePoint(0, 0, new Date('2024-01-01T00:00:00.001Z'));
+
+      expect(a.key()).not.toBe(b.key());
+    });
+
+    it('is stable across multiple calls', () => {
+      const p = new TimelinePoint(51.5074, -0.1278, new Date('2023-03-15T12:00:00Z'));
+
+      expect(p.key()).toBe(p.key());
+    });
+  });
+
+  describe('equals', () => {
+    it('returns true for points with the same lat, lon and timestamp', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a = new TimelinePoint(48.8566, 2.3522, ts);
+      const b = new TimelinePoint(48.8566, 2.3522, ts);
+
+      expect(a.equals(b)).toBe(true);
+    });
+
+    it('returns true when compared with itself', () => {
+      const p = new TimelinePoint(0, 0, new Date());
+
+      expect(p.equals(p)).toBe(true);
+    });
+
+    it('returns false for different latitude', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      expect(new TimelinePoint(1, 0, ts).equals(new TimelinePoint(2, 0, ts))).toBe(false);
+    });
+
+    it('returns false for different longitude', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      expect(new TimelinePoint(0, 1, ts).equals(new TimelinePoint(0, 2, ts))).toBe(false);
+    });
+
+    it('returns false for different timestamp', () => {
+      const a = new TimelinePoint(0, 0, new Date('2024-01-01T00:00:00.000Z'));
+      const b = new TimelinePoint(0, 0, new Date('2024-01-01T00:00:00.001Z'));
+
+      expect(a.equals(b)).toBe(false);
+    });
+
+    it('is consistent with key(): two points are equal iff their keys match', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a = new TimelinePoint(48.8566, 2.3522, ts);
+      const b = new TimelinePoint(48.8566, 2.3522, ts);
+      const c = new TimelinePoint(51.5074, -0.1278, ts);
+
+      expect(a.equals(b)).toBe(a.key() === b.key());
+      expect(a.equals(c)).toBe(a.key() === c.key());
+    });
+  });
 });

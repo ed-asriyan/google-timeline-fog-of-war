@@ -1,10 +1,8 @@
 // Presentation Layer: Side Panel Component
 
 
-import { Map as MapIcon, X } from 'lucide-react';
-import { TimelineFile } from '../../domains/map';
+import { Map as MapIcon, X, Trash2 } from 'lucide-react';
 import { ControlPanel } from './ControlPanel';
-import { FileList } from './FileList';
 import { FileUpload } from './FileUpload';
 import { FogSettings } from '../../domains/settings';
 
@@ -15,13 +13,10 @@ interface SidePanelProps {
   onRadiusChange: (radius: number) => void;
   onToggleRoads: () => void;
   onMaxLinkDistanceChange: (distance: number) => void;
-  files: TimelineFile[];
-  loadingState: 'idle' | 'loading' | 'ready' | 'error';
   isProcessing: boolean;
-  totalPoints: number;
-  totalSegments: number;
+  hasData: boolean;
   onFilesSelected: (files: File[]) => void;
-  onRemoveFile: (file: TimelineFile) => void;
+  onClearAll: () => void;
 }
 
 export function SidePanel({
@@ -31,13 +26,10 @@ export function SidePanel({
   onRadiusChange,
   onToggleRoads,
   onMaxLinkDistanceChange,
-  files,
-  loadingState,
   isProcessing,
-  totalPoints,
-  totalSegments,
+  hasData,
   onFilesSelected,
-  onRemoveFile,
+  onClearAll,
 }: SidePanelProps) {
   return (
     <div
@@ -57,18 +49,11 @@ export function SidePanel({
       <div className="bg-white md:rounded-xl shadow-xl border-t md:border border-gray-200 pointer-events-auto flex flex-col overflow-hidden h-full md:h-auto rounded-t-xl">
         {/* Header */}
         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <MapIcon className="text-blue-600 w-5 h-5" />
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">
-                Timeline Fog of War
-              </h1>
-            </div>
-            <div className="text-xs text-gray-500 flex items-center gap-2">
-              <span>{totalPoints.toLocaleString()} locations</span>
-              <span>•</span>
-              <span>{totalSegments.toLocaleString()} paths</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <MapIcon className="text-blue-600 w-5 h-5" />
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">
+              Timeline Fog of War
+            </h1>
           </div>
           <button
             onClick={onClose}
@@ -86,26 +71,24 @@ export function SidePanel({
             onToggleRoads={onToggleRoads}
             onMaxLinkDistanceChange={onMaxLinkDistanceChange}
           />
-
-          {/* File List Header */}
-          <div className="px-4 py-2 bg-gray-50 border-t border-b border-gray-100 flex justify-between items-center flex-shrink-0 sticky top-0 md:static z-10 md:z-auto backdrop-blur-sm bg-gray-50/90 md:bg-gray-50">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Source Files
-            </span>
-            <span className="text-xs text-gray-400">
-              {loadingState === 'loading' ? 'Restoring...' : `${files.length} loaded`}
-            </span>
-          </div>
-
-          {/* File List */}
-          <div className="bg-gray-50/30 md:overflow-y-auto md:custom-scrollbar md:flex-1 md:min-h-0 md:max-h-48">
-            <FileList files={files} loadingState={loadingState} onRemove={onRemoveFile} />
-          </div>
         </div>
 
-        {/* Upload Button Area */}
-        <FileUpload isProcessing={isProcessing} onFilesSelected={onFilesSelected} />
+        {/* Action Buttons Area */}
+        <div className="p-3 border-t border-gray-100 bg-white flex flex-col gap-2">
+          <FileUpload isProcessing={isProcessing} onFilesSelected={onFilesSelected} />
+          {hasData && (
+            <button
+              onClick={onClearAll}
+              disabled={isProcessing}
+              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm font-medium"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete All Data
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
