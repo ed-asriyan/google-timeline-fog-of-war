@@ -54,4 +54,5 @@ IndexedDbMapSegmentRepository.openDb().then(mapSegmentRepository => {
   );
 }).catch(err => {
   console.error('Failed to initialize app:', err);
+  alert('Failed to initialize app. Error: ' + err);
 });
