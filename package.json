@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "lint": "npx tsc --noEmit"
   },
   "dependencies": {
     "@amplitude/unified": "^1.0.0-beta.30",
