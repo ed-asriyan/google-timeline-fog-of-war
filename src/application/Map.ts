@@ -3,9 +3,9 @@
 import { Map, MapBounds, TimelineGroup } from '@/domains/map';
 import { MapSegment } from '@/domains/map/MapSegment';
 import { MapSegmentRepository } from '@/domains/ports';
-import { TimelineParserFactory } from '@/infrastructure/parsers/timeline-parser';
+import { TimelineParserFactory } from '@/infrastructure/parsers/TimelineParser';
 
-class SegmentsCache {
+class MapApplication {
   private cache: Record<number, MapSegment>;
   private readonly maxCacheSize: number;
   private repository: MapSegmentRepository;
@@ -54,12 +54,12 @@ class SegmentsCache {
  */
 export class TimelineFileService {
   private map: Map = new Map();;
-  private cache: SegmentsCache;
+  private cache: MapApplication;
   private repository: MapSegmentRepository;
 
   constructor(repository: MapSegmentRepository) {
     this.repository = repository;
-    this.cache = new SegmentsCache(this.repository, 100);
+    this.cache = new MapApplication(this.repository, 100);
 
   }
 
@@ -81,7 +81,7 @@ export class TimelineFileService {
    */
   async uploadFile(file: File): Promise<void> {
     await this.cache.invalidate();
-    const cache = new SegmentsCache(this.repository, Infinity);
+    const cache = new MapApplication(this.repository, Infinity);
 
     const timelineGroup = await this.processFile(file);
 

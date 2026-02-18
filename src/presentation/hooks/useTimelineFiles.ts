@@ -1,7 +1,7 @@
 // Presentation Layer: Custom hooks for timeline files
 
 import { useState, useCallback, useEffect } from 'react';
-import { TimelineFileService } from '../../application/timeline-file-service';
+import { TimelineFileService } from '../../application/Map';
 import { analytics } from '../../infrastructure/analytics';
 
 export function useTimelineFiles(service: TimelineFileService) {

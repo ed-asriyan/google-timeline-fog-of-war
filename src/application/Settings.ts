@@ -6,7 +6,7 @@ import { FogSettings, MapViewport } from '@/domains/settings';
 /**
  * Use case for managing fog settings and viewport
  */
-export class SettingsService {
+export class SettingsApplication {
   constructor(private repository: SettingsRepository) {}
 
   // Fog Settings

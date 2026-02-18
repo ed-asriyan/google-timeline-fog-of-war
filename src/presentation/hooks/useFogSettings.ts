@@ -2,9 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { FogSettings } from '../../domains/settings';
-import { SettingsService } from '../../application/settings-service';
+import { SettingsApplication } from '../../application/Settings';
 
-export function useFogSettings(service: SettingsService) {
+export function useFogSettings(service: SettingsApplication) {
   const [settings, setSettings] = useState<FogSettings>(() => service.loadSettings());
 
   // Responsive panel state

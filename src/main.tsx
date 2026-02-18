@@ -7,8 +7,8 @@ import { registerSW } from 'virtual:pwa-register'
 import { analytics } from './infrastructure/analytics'
 import { IndexedDbMapSegmentRepository } from './infrastructure/repositories/IndexedDbMapSegmentRepository'
 import { LocalStorageSettingsRepository } from './infrastructure/repositories/LocalStorageSettingsRepository'
-import { TimelineFileService } from './application/timeline-file-service'
-import { SettingsService } from './application/settings-service'
+import { TimelineFileService } from './application/Map'
+import { SettingsApplication } from './application/Settings'
 
 // Initialize analytics
 analytics.init();
@@ -45,7 +45,7 @@ if ('serviceWorker' in navigator) {
 IndexedDbMapSegmentRepository.openDb().then(mapSegmentRepository => {
   const settingsRepository = new LocalStorageSettingsRepository();
   const timelineFileService = new TimelineFileService(mapSegmentRepository);
-  const settingsService = new SettingsService(settingsRepository);
+  const settingsService = new SettingsApplication(settingsRepository);
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

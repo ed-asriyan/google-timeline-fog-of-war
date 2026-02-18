@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Menu } from 'lucide-react';
-import { TimelineFileService } from './application/timeline-file-service';
-import { SettingsService } from './application/settings-service';
+import { TimelineFileService } from './application/Map';
+import { SettingsApplication } from './application/Settings';
 import { MapBounds, LocationPoint } from './domains/map/value-objects';
 import { TimelinePoint } from './domains/map/TimelinePoint';
 import { TimelinePath } from './domains/map/TimelinePath';
@@ -40,7 +40,7 @@ const styles = `
 
 interface AppProps {
   timelineFileService: TimelineFileService;
-  settingsService: SettingsService;
+  settingsService: SettingsApplication;
 }
 
 export default function App({ timelineFileService, settingsService }: AppProps) {
