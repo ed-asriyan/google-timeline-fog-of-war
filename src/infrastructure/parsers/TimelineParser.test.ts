@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TimelineParserFactory } from './timeline-parser';
+import { TimelineParserFactory } from './TimelineParser';
 
 describe('Timeline Parser', () => {
   describe('iOS Format', () => {
