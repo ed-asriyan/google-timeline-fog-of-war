@@ -74,13 +74,13 @@ export function SidePanel({
         </div>
 
         {/* Action Buttons Area */}
-        <div className="p-3 border-t border-gray-100 bg-white flex flex-col gap-2">
+        <div className="p-3 border-t border-gray-100 bg-white flex flex-col">
           <FileUpload isProcessing={isProcessing} onFilesSelected={onFilesSelected} />
           {hasData && (
             <button
               onClick={onClearAll}
               disabled={isProcessing}
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm font-medium"
+              className="flex items-center mt-3 justify-center gap-2 w-full px-4 py-2.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm font-medium"
             >
               <Trash2 className="w-4 h-4" />
               Delete All Data
