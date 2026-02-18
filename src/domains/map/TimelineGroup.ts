@@ -12,77 +12,103 @@ import { MapBounds, Statistics } from './value-objects';
  * Used by TimelineData and MapSegment
  */
 export class TimelineGroup {
-    private readonly _points: Map<string, TimelinePoint>;
-    private readonly _paths: Map<string, TimelinePath>;
+    private _points: TimelinePoint[];
+    private _paths: TimelinePath[];
 
     constructor(points: readonly TimelinePoint[] = [], paths: readonly TimelinePath[] = []) {
-        this._points = new Map(points.map(p => [p.key(), p]));
-        this._paths = new Map(paths.map(p => [p.key(), p]));
+        this._points = [...points];
+        this._paths = [...paths];
     }
 
-    get points(): Set<TimelinePoint> {
-        return new Set(this._points.values());
+    get points(): ReadonlyArray<TimelinePoint> {
+        return this._points;
     }
 
-    get paths(): Set<TimelinePath> {
-        return new Set(this._paths.values());
+    get paths(): ReadonlyArray<TimelinePath> {
+        return this._paths;
     }
 
     /**
-     * Add points to this group (stores references, not copies)
+     * Add points to this group (stores references, not copies, without deduplication).
+     * Call removeDuplicates() after bulk loads to eliminate duplicates.
      */
     addPoints(...points: TimelinePoint[]): void {
-        for (const p of points) this._points.set(p.key(), p);
+        this._points.push(...points);
     }
 
     /**
-     * Add paths to this group (stores references, not copies)
+     * Add paths to this group (stores references, not copies, without deduplication).
+     * Call removeDuplicates() after bulk loads to eliminate duplicates.
      */
     addPaths(...paths: TimelinePath[]): void {
-        for (const p of paths) this._paths.set(p.key(), p);
+        this._paths.push(...paths);
     }
 
     /**
      * Remove points from this group (batch operation for efficiency)
      */
     removePoints(...points: TimelinePoint[]): void {
-        for (const p of points) this._points.delete(p.key());
+        const keys = new Set(points.map(p => p.key()));
+        this._points = this._points.filter(p => !keys.has(p.key()));
     }
 
     /**
      * Remove paths from this group (batch operation for efficiency)
      */
     removePaths(...paths: TimelinePath[]): void {
-        for (const p of paths) this._paths.delete(p.key());
+        const keys = new Set(paths.map(p => p.key()));
+        this._paths = this._paths.filter(p => !keys.has(p.key()));
     }
 
     /**
      * Get all points in this group
      */
     getPoints(): readonly TimelinePoint[] {
-        return Array.from(this._points.values());
+        return [...this._points];
     }
 
     /**
      * Get all paths in this group
      */
     getPaths(): readonly TimelinePath[] {
-        return Array.from(this._paths.values());
+        return [...this._paths];
     }
 
     /**
      * Get statistics about points and paths in this group
      */
     getStatistics(): Statistics {
-        return new Statistics(this._points.size, this._paths.size);
+        return new Statistics(this._points.length, this._paths.length);
     }
 
     /**
-     * Merge points and paths from another TimelineGroup into this one
+     * Merge points and paths from another TimelineGroup into this one (no deduplication).
      */
     mergeFrom(other: TimelineGroup): void {
-        this.addPoints(...other.getPoints());
-        this.addPaths(...other.getPaths());
+        this._points.push(...other._points);
+        this._paths.push(...other._paths);
+    }
+
+    /**
+     * Remove duplicate points and paths by key.
+     * Should be called by the application layer after loading a new file.
+     */
+    removeDuplicates(): void {
+        const seenPoints = new Set<string>();
+        this._points = this._points.filter(p => {
+            const k = p.key();
+            if (seenPoints.has(k)) return false;
+            seenPoints.add(k);
+            return true;
+        });
+
+        const seenPaths = new Set<string>();
+        this._paths = this._paths.filter(p => {
+            const k = p.key();
+            if (seenPaths.has(k)) return false;
+            seenPaths.add(k);
+            return true;
+        });
     }
 
     /**

@@ -30,64 +30,65 @@ describe('TimelineGroup', () => {
         it('should create group with points and paths', () => {
             const group = new TimelineGroup([point1, point2], [path1]);
 
-            expect(group.points.size).toBe(2);
-            expect(group.paths.size).toBe(1);
-            expect(group.points.has(point1)).toBe(true);
-            expect(group.points.has(point2)).toBe(true);
-            expect(group.paths.has(path1)).toBe(true);
+            expect(group.points.length).toBe(2);
+            expect(group.paths.length).toBe(1);
+            expect(group.points.includes(point1)).toBe(true);
+            expect(group.points.includes(point2)).toBe(true);
+            expect(group.paths.includes(path1)).toBe(true);
         });
 
         it('should create empty group when no arguments provided', () => {
             const group = new TimelineGroup([], []);
 
-            expect(group.points.size).toBe(0);
-            expect(group.paths.size).toBe(0);
+            expect(group.points.length).toBe(0);
+            expect(group.paths.length).toBe(0);
         });
 
         it('should create group with only points', () => {
             const group = new TimelineGroup([point1, point2], []);
 
-            expect(group.points.size).toBe(2);
-            expect(group.paths.size).toBe(0);
+            expect(group.points.length).toBe(2);
+            expect(group.paths.length).toBe(0);
         });
 
         it('should create group with only paths', () => {
             const group = new TimelineGroup([], [path1, path2]);
 
-            expect(group.points.size).toBe(0);
-            expect(group.paths.size).toBe(2);
+            expect(group.points.length).toBe(0);
+            expect(group.paths.length).toBe(2);
         });
 
-        it('should handle duplicate points in constructor', () => {
+        it('should store duplicate point references in constructor (no dedup)', () => {
             const group = new TimelineGroup([point1, point1, point2], []);
 
-            // Sets automatically deduplicate
-            expect(group.points.size).toBe(2);
+            // Arrays do not deduplicate; use removeDuplicates() explicitly
+            expect(group.points.length).toBe(3);
         });
 
-        it('should handle duplicate paths in constructor', () => {
+        it('should store duplicate path references in constructor (no dedup)', () => {
             const group = new TimelineGroup([], [path1, path1]);
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(2);
         });
 
-        it('should handle equal points in constructor', () => {
+        it('should store equal points in constructor without dedup', () => {
             const point2: TimelinePoint = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
 
             const group = new TimelineGroup([point1, point2], []);
 
-            expect(group.points.size).toBe(1);
+            // No dedup on construction; call removeDuplicates() to deduplicate
+            expect(group.points.length).toBe(2);
         });
 
-        it('should handle equal paths in constructor', () => {
+        it('should store equal paths in constructor without dedup', () => {
             const path2: TimelinePath = new TimelinePath(point1, point2);
 
             const group = new TimelineGroup([], [path1, path2]);
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(2);
         });
 
-        it('should handle equal paths in constructor 2', () => {
+        it('should store equal paths in constructor without dedup 2', () => {
             const point3 = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
             const point4 = new TimelinePoint(point2.lat, point2.lon, point2.timestamp);
 
@@ -96,23 +97,23 @@ describe('TimelineGroup', () => {
 
             const group = new TimelineGroup([], [path1, path2]);
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(2);
         });
 
         it('should store references, not copies', () => {
             const group = new TimelineGroup([point1], [path1]);
 
-            expect(group.points.has(point1)).toBe(true);
-            expect(Array.from(group.points)[0]).toBe(point1);
-            expect(group.paths.has(path1)).toBe(true);
-            expect(Array.from(group.paths)[0]).toBe(path1);
+            expect(group.points.includes(point1)).toBe(true);
+            expect(group.points[0]).toBe(point1);
+            expect(group.paths.includes(path1)).toBe(true);
+            expect(group.paths[0]).toBe(path1);
         });
 
         it('should handle empty arrays', () => {
             const group = new TimelineGroup([], []);
 
-            expect(group.points.size).toBe(0);
-            expect(group.paths.size).toBe(0);
+            expect(group.points.length).toBe(0);
+            expect(group.paths.length).toBe(0);
         });
     });
 
@@ -121,49 +122,49 @@ describe('TimelineGroup', () => {
             const group = new TimelineGroup([], []);
             group.addPoints(point1);
 
-            expect(group.points.size).toBe(1);
-            expect(group.points.has(point1)).toBe(true);
+            expect(group.points.length).toBe(1);
+            expect(group.points.includes(point1)).toBe(true);
         });
 
         it('should add multiple points', () => {
             const group = new TimelineGroup([], []);
             group.addPoints(point1, point2, point3);
 
-            expect(group.points.size).toBe(3);
-            expect(group.points.has(point1)).toBe(true);
-            expect(group.points.has(point2)).toBe(true);
-            expect(group.points.has(point3)).toBe(true);
+            expect(group.points.length).toBe(3);
+            expect(group.points.includes(point1)).toBe(true);
+            expect(group.points.includes(point2)).toBe(true);
+            expect(group.points.includes(point3)).toBe(true);
         });
 
-        it('should not duplicate existing points', () => {
+        it('should allow duplicate point references (no dedup)', () => {
             const group = new TimelineGroup([point1], []);
             group.addPoints(point1);
 
-            expect(group.points.size).toBe(1);
+            expect(group.points.length).toBe(2);
         });
 
-        it('should not add equal existing points', () => {
+        it('should allow equal points without dedup', () => {
             const group = new TimelineGroup([point1], []);
             const point2 = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
             group.addPoints(point2);
 
-            expect(group.points.size).toBe(1);
+            expect(group.points.length).toBe(2);
         });
 
         it('should handle empty arguments', () => {
             const group = new TimelineGroup([point1], []);
             group.addPoints();
 
-            expect(group.points.size).toBe(1);
+            expect(group.points.length).toBe(1);
         });
 
         it('should add to existing points', () => {
             const group = new TimelineGroup([point1], []);
             group.addPoints(point2);
 
-            expect(group.points.size).toBe(2);
-            expect(group.points.has(point1)).toBe(true);
-            expect(group.points.has(point2)).toBe(true);
+            expect(group.points.length).toBe(2);
+            expect(group.points.includes(point1)).toBe(true);
+            expect(group.points.includes(point2)).toBe(true);
         });
     });
 
@@ -172,48 +173,48 @@ describe('TimelineGroup', () => {
             const group = new TimelineGroup([], []);
             group.addPaths(path1);
 
-            expect(group.paths.size).toBe(1);
-            expect(group.paths.has(path1)).toBe(true);
+            expect(group.paths.length).toBe(1);
+            expect(group.paths.includes(path1)).toBe(true);
         });
 
         it('should add multiple paths', () => {
             const group = new TimelineGroup([], []);
             group.addPaths(path1, path2);
 
-            expect(group.paths.size).toBe(2);
-            expect(group.paths.has(path1)).toBe(true);
-            expect(group.paths.has(path2)).toBe(true);
+            expect(group.paths.length).toBe(2);
+            expect(group.paths.includes(path1)).toBe(true);
+            expect(group.paths.includes(path2)).toBe(true);
         });
 
-        it('should not duplicate existing paths', () => {
+        it('should allow duplicate path references (no dedup)', () => {
             const group = new TimelineGroup([], [path1]);
             group.addPaths(path1);
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(2);
         });
 
         it('should handle empty arguments', () => {
             const group = new TimelineGroup([], [path1]);
             group.addPaths();
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(1);
         });
 
         it('should add to existing paths', () => {
             const group = new TimelineGroup([], [path1]);
             group.addPaths(path2);
 
-            expect(group.paths.size).toBe(2);
-            expect(group.paths.has(path1)).toBe(true);
-            expect(group.paths.has(path2)).toBe(true);
+            expect(group.paths.length).toBe(2);
+            expect(group.paths.includes(path1)).toBe(true);
+            expect(group.paths.includes(path2)).toBe(true);
         });
 
-        it('should not add equal existing paths', () => {
+        it('should allow equal paths without dedup', () => {
             const group = new TimelineGroup([], [path1]);
             const path2 = new TimelinePath(path1.a, path1.b);
             group.addPaths(path2);
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(2);
         });
     });
 
@@ -222,41 +223,41 @@ describe('TimelineGroup', () => {
             const group = new TimelineGroup([point1, point2], []);
             group.removePoints(point1);
 
-            expect(group.points.size).toBe(1);
-            expect(group.points.has(point1)).toBe(false);
-            expect(group.points.has(point2)).toBe(true);
+            expect(group.points.length).toBe(1);
+            expect(group.points.includes(point1)).toBe(false);
+            expect(group.points.includes(point2)).toBe(true);
         });
 
         it('should remove multiple points in batch', () => {
             const group = new TimelineGroup([point1, point2, point3], []);
             group.removePoints(point1, point3);
 
-            expect(group.points.size).toBe(1);
-            expect(group.points.has(point2)).toBe(true);
-            expect(group.points.has(point1)).toBe(false);
-            expect(group.points.has(point3)).toBe(false);
+            expect(group.points.length).toBe(1);
+            expect(group.points.includes(point2)).toBe(true);
+            expect(group.points.includes(point1)).toBe(false);
+            expect(group.points.includes(point3)).toBe(false);
         });
 
         it('should handle removing non-existent point', () => {
             const group = new TimelineGroup([point1], []);
             group.removePoints(point2);
 
-            expect(group.points.size).toBe(1);
-            expect(group.points.has(point1)).toBe(true);
+            expect(group.points.length).toBe(1);
+            expect(group.points.includes(point1)).toBe(true);
         });
 
         it('should handle empty arguments', () => {
             const group = new TimelineGroup([point1], []);
             group.removePoints();
 
-            expect(group.points.size).toBe(1);
+            expect(group.points.length).toBe(1);
         });
 
         it('should remove all points when all are specified', () => {
             const group = new TimelineGroup([point1, point2], []);
             group.removePoints(point1, point2);
 
-            expect(group.points.size).toBe(0);
+            expect(group.points.length).toBe(0);
         });
     });
 
@@ -265,31 +266,31 @@ describe('TimelineGroup', () => {
             const group = new TimelineGroup([], [path1, path2]);
             group.removePaths(path1);
 
-            expect(group.paths.size).toBe(1);
-            expect(group.paths.has(path1)).toBe(false);
-            expect(group.paths.has(path2)).toBe(true);
+            expect(group.paths.length).toBe(1);
+            expect(group.paths.includes(path1)).toBe(false);
+            expect(group.paths.includes(path2)).toBe(true);
         });
 
         it('should remove multiple paths in batch', () => {
             const group = new TimelineGroup([], [path1, path2]);
             group.removePaths(path1, path2);
 
-            expect(group.paths.size).toBe(0);
+            expect(group.paths.length).toBe(0);
         });
 
         it('should handle removing non-existent path', () => {
             const group = new TimelineGroup([], [path1]);
             group.removePaths(path2);
 
-            expect(group.paths.size).toBe(1);
-            expect(group.paths.has(path1)).toBe(true);
+            expect(group.paths.length).toBe(1);
+            expect(group.paths.includes(path1)).toBe(true);
         });
 
         it('should handle empty arguments', () => {
             const group = new TimelineGroup([], [path1]);
             group.removePaths();
 
-            expect(group.paths.size).toBe(1);
+            expect(group.paths.length).toBe(1);
         });
     });
 
@@ -396,26 +397,94 @@ describe('TimelineGroup', () => {
         });
     });
 
-    describe('readonly sets', () => {
-        it('should expose points as readonly set', () => {
+    describe('array accessors', () => {
+        it('should expose points as readonly array', () => {
             const group = new TimelineGroup([point1], []);
 
-            expect(group.points).toBeInstanceOf(Set);
-            expect(group.points.has(point1)).toBe(true);
+            expect(Array.isArray(group.points)).toBe(true);
+            expect(group.points.includes(point1)).toBe(true);
         });
 
-        it('should expose paths as readonly set', () => {
+        it('should expose paths as readonly array', () => {
             const group = new TimelineGroup([], [path1]);
 
-            expect(group.paths).toBeInstanceOf(Set);
-            expect(group.paths.has(path1)).toBe(true);
+            expect(Array.isArray(group.paths)).toBe(true);
+            expect(group.paths.includes(path1)).toBe(true);
         });
 
-        it('should allow direct set access (readonly)', () => {
+        it('should allow direct array access', () => {
             const group = new TimelineGroup([point1, point2], [path1]);
 
-            expect(group.points.size).toBe(2);
-            expect(group.paths.size).toBe(1);
+            expect(group.points.length).toBe(2);
+            expect(group.paths.length).toBe(1);
+        });
+    });
+
+    describe('removeDuplicates', () => {
+        it('should remove duplicate point references', () => {
+            const group = new TimelineGroup([point1, point1, point2], []);
+            group.removeDuplicates();
+
+            expect(group.points.length).toBe(2);
+            expect(group.points.includes(point1)).toBe(true);
+            expect(group.points.includes(point2)).toBe(true);
+        });
+
+        it('should remove equal points (same key)', () => {
+            const pointDup = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
+            const group = new TimelineGroup([point1, pointDup, point2], []);
+            group.removeDuplicates();
+
+            expect(group.points.length).toBe(2);
+        });
+
+        it('should keep the first occurrence of a duplicate point', () => {
+            const pointDup = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
+            const group = new TimelineGroup([point1, pointDup], []);
+            group.removeDuplicates();
+
+            expect(group.points[0]).toBe(point1);
+        });
+
+        it('should remove duplicate path references', () => {
+            const group = new TimelineGroup([], [path1, path1, path2]);
+            group.removeDuplicates();
+
+            expect(group.paths.length).toBe(2);
+        });
+
+        it('should remove equal paths (same key)', () => {
+            const pathDup = new TimelinePath(point1, point2);
+            const group = new TimelineGroup([], [path1, pathDup]);
+            group.removeDuplicates();
+
+            expect(group.paths.length).toBe(1);
+        });
+
+        it('should handle already-deduplicated group', () => {
+            const group = new TimelineGroup([point1, point2], [path1, path2]);
+            group.removeDuplicates();
+
+            expect(group.points.length).toBe(2);
+            expect(group.paths.length).toBe(2);
+        });
+
+        it('should handle empty group', () => {
+            const group = new TimelineGroup([], []);
+            group.removeDuplicates();
+
+            expect(group.points.length).toBe(0);
+            expect(group.paths.length).toBe(0);
+        });
+
+        it('should deduplicate after mergeFrom', () => {
+            const group1 = new TimelineGroup([point1, point2], [path1]);
+            const group2 = new TimelineGroup([point2, point3], [path1]);
+            group1.mergeFrom(group2);
+            group1.removeDuplicates();
+
+            expect(group1.points.length).toBe(3);
+            expect(group1.paths.length).toBe(1);
         });
     });
 });

@@ -110,8 +110,8 @@ describe('Timeline Parser', () => {
       const points = result.getPoints();
       const paths = result.getPaths();
       
-      // Should parse all 5 points from the timelinePath
-      expect(points.length).toBe(4);
+      // Parser returns all 5 raw points; dedup (removeDuplicates) is applied at the application layer
+      expect(points.length).toBe(5);
       
       // Verify each point is parsed correctly
       expectedPoints.forEach((expected, index) => {

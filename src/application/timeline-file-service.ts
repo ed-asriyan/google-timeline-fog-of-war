@@ -85,14 +85,25 @@ export class TimelineFileService {
 
     const timelineGroup = await this.processFile(file);
 
+    const touchedSegments = new Set<number>();
+
     for (const [segmentId, points] of Object.entries(this.map.getSegmentIdForPoints(timelineGroup.points))) {
-      const segment = await cache.loadSegment(Number(segmentId));
+      const id = Number(segmentId);
+      const segment = await cache.loadSegment(id);
       segment.addPoints(...points);
+      touchedSegments.add(id);
     }
 
     for (const [segmentId, paths] of Object.entries(this.map.getSegmentIdsForPaths(timelineGroup.paths))) {
-      const segment = await cache.loadSegment(Number(segmentId));
+      const id = Number(segmentId);
+      const segment = await cache.loadSegment(id);
       segment.addPaths(...paths);
+      touchedSegments.add(id);
+    }
+
+    // Deduplicate only the segments touched by this file load
+    for (const id of touchedSegments) {
+      (await cache.loadSegment(id)).removeDuplicates();
     }
 
     await cache.flushAll();

@@ -38,10 +38,21 @@ describe('MapSegment', () => {
             expect(segment.getStatistics()).toEqual({ totalPoints: 3, totalPaths: 0 });
         });
 
-        it('should handle adding duplicate points', () => {
+        it('should allow adding duplicate points (no dedup on add)', () => {
             const segment = new MapSegment(0);
             segment.addPoints(point1);
             segment.addPoints(point1);
+
+            const points = segment.getPoints();
+            expect(points.length).toBe(2);
+            expect(segment.getStatistics()).toEqual({ totalPoints: 2, totalPaths: 0 });
+        });
+
+        it('should deduplicate points via removeDuplicates()', () => {
+            const segment = new MapSegment(0);
+            segment.addPoints(point1);
+            segment.addPoints(point1);
+            segment.removeDuplicates();
 
             const points = segment.getPoints();
             expect(points.length).toBe(1);
