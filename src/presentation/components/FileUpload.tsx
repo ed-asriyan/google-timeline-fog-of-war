@@ -26,8 +26,8 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
   };
 
   return (
-    <div className="p-3 border-t border-gray-100 bg-white">
-      <div className="relative mb-2">
+    <div>
+      <div className="relative mb-3">
         <input
           ref={inputRef}
           type="file"
@@ -35,31 +35,59 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
           multiple
           accept=".json"
           onChange={handleChange}
+          disabled={isProcessing}
           className="hidden"
         />
         <label
-          htmlFor="file-upload"
-          className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg cursor-pointer transition-all shadow-sm border border-transparent font-medium text-sm ${
+          htmlFor={isProcessing ? undefined : 'file-upload'}
+          className={`flex flex-col items-center justify-center w-full h-10 px-4 rounded-lg transition-all shadow-sm border border-transparent font-medium text-sm ${
             isProcessing
-              ? 'bg-gray-100 text-gray-400 cursor-wait'
-              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 hover:shadow-blue-300'
+              ? 'bg-blue-500 text-white cursor-wait opacity-80'
+              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 hover:shadow-blue-300 cursor-pointer'
           }`}
         >
           {isProcessing ? (
-            <>Processing...</>
-          ) : (
             <>
+              <span className="flex items-center gap-2 leading-none">
+                <svg
+                  className="animate-spin w-4 h-4 flex-shrink-0"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-30"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-90"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Processing files…
+              </span>
+              <span className="text-[10px] font-normal opacity-75 leading-none mt-0.5">
+                This may take a while
+              </span>
+            </>
+          ) : (
+            <span className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
               Add Google Timeline files
-            </>
+            </span>
           )}
         </label>
       </div>
 
-      <div className="flex flex-col gap-2 items-center text-[10px] text-gray-400">
+      <div className="flex flex-col gap-1 mt-1 items-center text-[10px] text-gray-400">
         <p className="flex items-center gap-1 text-center leading-tight max-w-[90%] mx-auto opacity-75">
           <Database className="w-3 h-3 flex-shrink-0" />
-          <span>Your location data is <b>never</b> uploaded to any server</span>
+          <span>Your data is <b>never</b> uploaded to any server</span>
         </p>
         <div>
           <span>Export Google Timeline files:</span>

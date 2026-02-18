@@ -59,7 +59,8 @@ export class TimelineFileService {
 
   constructor(repository: MapSegmentRepository) {
     this.repository = repository;
-    this.cache = new MapApplication(this.repository, 8);
+    this.cache = new MapApplication(this.repository, 100);
+
   }
 
   async queryViewport(bounds: MapBounds): Promise<TimelineGroup> {
