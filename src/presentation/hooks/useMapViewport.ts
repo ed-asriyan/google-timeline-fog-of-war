@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { MapViewport } from '../../domains/settings';
 import { SettingsService } from '../../application/settings-service';
-import { SettingsRepository } from '../../infrastructure/repositories/settings-repository';
+import { LocalStorageSettingsRepository } from '../../infrastructure/repositories/LocalStorageSettingsRepository';
 
 interface ViewportState {
   lat: number;
@@ -12,7 +12,7 @@ interface ViewportState {
 }
 
 export function useMapViewport() {
-  const service = useMemo(() => new SettingsService(new SettingsRepository()), []);
+  const service = useMemo(() => new SettingsService(new LocalStorageSettingsRepository()), []);
   
   // Load initial viewport from service
   const [viewport, setViewport] = useState<ViewportState>(() => {

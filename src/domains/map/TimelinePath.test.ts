@@ -65,4 +65,115 @@ describe('TimelinePath', () => {
       expect(path.length).toBeLessThan(6000);
     });
   });
+
+  describe('key', () => {
+    it('returns the same key for paths with equal endpoints', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a1 = new TimelinePoint(48.8566, 2.3522, ts);
+      const a2 = new TimelinePoint(48.8566, 2.3522, ts);
+      const b1 = new TimelinePoint(51.5074, -0.1278, ts);
+      const b2 = new TimelinePoint(51.5074, -0.1278, ts);
+
+      expect(new TimelinePath(a1, b1).key()).toBe(new TimelinePath(a2, b2).key());
+    });
+
+    it('returns different keys when the start point differs', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const end = new TimelinePoint(51.5074, -0.1278, ts);
+      const p1 = new TimelinePath(new TimelinePoint(48.8566, 2.3522, ts), end);
+      const p2 = new TimelinePath(new TimelinePoint(48.9, 2.3522, ts), end);
+
+      expect(p1.key()).not.toBe(p2.key());
+    });
+
+    it('returns different keys when the end point differs', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const start = new TimelinePoint(48.8566, 2.3522, ts);
+      const p1 = new TimelinePath(start, new TimelinePoint(51.5074, -0.1278, ts));
+      const p2 = new TimelinePath(start, new TimelinePoint(51.6, -0.1278, ts));
+
+      expect(p1.key()).not.toBe(p2.key());
+    });
+
+    it('returns different keys for reversed paths', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a = new TimelinePoint(48.8566, 2.3522, ts);
+      const b = new TimelinePoint(51.5074, -0.1278, ts);
+
+      expect(new TimelinePath(a, b).key()).not.toBe(new TimelinePath(b, a).key());
+    });
+
+    it('is stable across multiple calls', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const path = new TimelinePath(
+        new TimelinePoint(48.8566, 2.3522, ts),
+        new TimelinePoint(51.5074, -0.1278, ts),
+      );
+
+      expect(path.key()).toBe(path.key());
+    });
+  });
+
+  describe('equals', () => {
+    it('returns true for paths with equal endpoints', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a1 = new TimelinePoint(48.8566, 2.3522, ts);
+      const a2 = new TimelinePoint(48.8566, 2.3522, ts);
+      const b1 = new TimelinePoint(51.5074, -0.1278, ts);
+      const b2 = new TimelinePoint(51.5074, -0.1278, ts);
+
+      expect(new TimelinePath(a1, b1).equals(new TimelinePath(a2, b2))).toBe(true);
+    });
+
+    it('returns true when compared with itself', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const path = new TimelinePath(
+        new TimelinePoint(0, 0, ts),
+        new TimelinePoint(1, 1, ts),
+      );
+
+      expect(path.equals(path)).toBe(true);
+    });
+
+    it('returns false when start point differs', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const end = new TimelinePoint(51.5074, -0.1278, ts);
+      const p1 = new TimelinePath(new TimelinePoint(48.8566, 2.3522, ts), end);
+      const p2 = new TimelinePath(new TimelinePoint(48.9, 2.3522, ts), end);
+
+      expect(p1.equals(p2)).toBe(false);
+    });
+
+    it('returns false when end point differs', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const start = new TimelinePoint(48.8566, 2.3522, ts);
+      const p1 = new TimelinePath(start, new TimelinePoint(51.5074, -0.1278, ts));
+      const p2 = new TimelinePath(start, new TimelinePoint(51.6, -0.1278, ts));
+
+      expect(p1.equals(p2)).toBe(false);
+    });
+
+    it('returns false for reversed paths', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a = new TimelinePoint(48.8566, 2.3522, ts);
+      const b = new TimelinePoint(51.5074, -0.1278, ts);
+
+      expect(new TimelinePath(a, b).equals(new TimelinePath(b, a))).toBe(false);
+    });
+
+    it('is consistent with key(): two paths are equal iff their keys match', () => {
+      const ts = new Date('2024-06-01T00:00:00Z');
+      const a = new TimelinePoint(48.8566, 2.3522, ts);
+      const b = new TimelinePoint(51.5074, -0.1278, ts);
+      const c = new TimelinePoint(48.8566, 2.3522, ts); // equals a
+      const d = new TimelinePoint(51.5074, -0.1278, ts); // equals b
+
+      const p1 = new TimelinePath(a, b);
+      const p2 = new TimelinePath(c, d); // equals p1
+      const p3 = new TimelinePath(b, a); // reversed
+
+      expect(p1.equals(p2)).toBe(p1.key() === p2.key());
+      expect(p1.equals(p3)).toBe(p1.key() === p3.key());
+    });
+  });
 });

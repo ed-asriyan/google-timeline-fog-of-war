@@ -1,79 +1,53 @@
 // Presentation Layer: Custom hooks for timeline files
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { TimelineFile } from '../../domains/map';
+import { useState, useCallback, useEffect } from 'react';
 import { TimelineFileService } from '../../application/timeline-file-service';
 import { analytics } from '../../infrastructure/analytics';
 
-type LoadingState = 'idle' | 'loading' | 'ready' | 'error';
-
 export function useTimelineFiles(service: TimelineFileService) {
-  const [files, setFiles] = useState<TimelineFile[]>([]);
-  const [loadingState, setLoadingState] = useState<LoadingState>('idle');
+  const [dataVersion, setDataVersion] = useState(0);
+  const [hasData, setHasData] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const initializedRef = useRef(false);
 
-  // Load files on mount
+  // Check on mount whether IndexedDB already has data
   useEffect(() => {
-    const loadFiles = async () => {
-      if (initializedRef.current) return;
-      initializedRef.current = true;
-
-      setLoadingState('loading');
-      try {
-        await service.initialize();
-        const storedFiles = await service.loadAll();
-        setFiles(storedFiles);
-        setLoadingState('ready');
-      } catch (error) {
-        console.error('Failed to load files:', error);
-        setLoadingState('error');
-      }
-    };
-
-    loadFiles();
+    service.hasData().then(setHasData).catch(() => setHasData(false));
   }, [service]);
 
-  // Upload files
+  // Upload files one at a time
   const uploadFiles = useCallback(async (fileList: File[]) => {
     setIsProcessing(true);
     try {
-      await service.uploadFiles(fileList);
-      // Reload ALL files from service after upload to ensure consistency
-      const allFiles = await service.loadAll();
-      setFiles(allFiles);
-      
-      // Track successful file processing (aggregate stats only, no location data)
-      const totalPoints = allFiles.reduce((sum, f) => sum + f.data.getStatistics().totalPoints, 0);
-      analytics.track('Files Processed', {
-        filesProcessed: allFiles.length,
-        totalPoints,
-      });
+      for (const file of fileList) {
+        await service.uploadFile(file);
+      }
+      setDataVersion(v => v + 1);
+      setHasData(true);
+      analytics.track('Files Processed', { fileCount: fileList.length });
     } catch (error) {
       console.error('Failed to upload files:', error);
-      analytics.track('File Processing Failed', {
-        fileCount: fileList.length,
-      });
+      analytics.track('File Processing Failed', { fileCount: fileList.length });
     } finally {
       setIsProcessing(false);
     }
   }, [service]);
 
-  // Remove file
-  const removeFile = useCallback(async (file: TimelineFile) => {
+  // Clear all imported data
+  const clearAll = useCallback(async () => {
     try {
-      await service.remove(file);
-      setFiles(prev => prev.filter(f => f.id !== file.id));
+      await service.clearAll();
+      setDataVersion(v => v + 1);
+      setHasData(false);
     } catch (error) {
-      console.error('Failed to remove file:', error);
+      console.error('Failed to clear all data:', error);
     }
   }, [service]);
 
   return {
-    files,
-    loadingState,
+    dataVersion,
+    hasData,
     isProcessing,
     uploadFiles,
-    removeFile,
+    clearAll,
   };
 }

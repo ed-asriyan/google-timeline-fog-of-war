@@ -16,4 +16,24 @@ export class TimelinePoint extends LocationPoint {
         super(lat, lon);
         this.timestamp = timestamp;
     }
+
+    key(): string {
+        return `${this.lat},${this.lon},${this.timestamp.getTime()}`;
+    }
+
+    equals(other: TimelinePoint): boolean {
+        return this.lat === other.lat && this.lon === other.lon && this.timestamp.getTime() === other.timestamp.getTime();
+    }
+
+    toJson(): any {
+        return {
+            lat: this.lat,
+            lon: this.lon,
+            timestamp: this.timestamp.toISOString(),
+        };
+    }
+
+    static fromJson(json: any): TimelinePoint {
+        return new TimelinePoint(json.lat, json.lon, new Date(json.timestamp));
+    }
 }

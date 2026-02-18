@@ -11,6 +11,4 @@ export * from './consts';
 export * from './TimelineGroup';
 export * from './TimelinePoint';
 export * from './TimelinePath';
-export * from './TimelineData';
-export * from './TimelineFile';
 export * from './Map';

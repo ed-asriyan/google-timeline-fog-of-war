@@ -1,13 +1,14 @@
 // Infrastructure Layer: Settings repository
 
-import { FogSettings, MapViewport } from '../../domains/settings';
+import { SettingsRepository } from '@/domains/ports';
+import { FogSettings, MapViewport } from '@/domains/settings';
 
 const SETTINGS_KEY_PREFIX = 'fog_settings_';
 
 /**
  * Repository for fog settings and viewport using localStorage
  */
-export class SettingsRepository {
+export class LocalStorageSettingsRepository implements SettingsRepository {
   private getKey(key: string): string {
     return `${SETTINGS_KEY_PREFIX}${key}`;
   }

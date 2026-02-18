@@ -1,6 +1,6 @@
 // Infrastructure Layer: Timeline format parsers
 
-import { TimelinePoint, TimelinePath, TimelineData, LocationPoint } from '../../domains/map';
+import { TimelinePoint, TimelinePath, LocationPoint, TimelineGroup } from '@/domains/map';
 
 export type TimelineFormat = 'ios' | 'android' | 'unknown';
 
@@ -18,7 +18,7 @@ interface TimelineEntry {
  */
 interface ITimelineParser {
   canParse(data: any): boolean;
-  parse(data: any): TimelineData;
+  parse(data: any): TimelineGroup;
 }
 
 /**
@@ -35,7 +35,7 @@ export class IOSTimelineParser implements ITimelineParser {
     );
   }
 
-  parse(data: any[]): TimelineData {
+  parse(data: any[]): TimelineGroup {
     const entries = data
       .map(entry => this.parseEntry(entry))
       .filter((e): e is TimelineEntry => e !== null)
@@ -99,7 +99,7 @@ export class IOSTimelineParser implements ITimelineParser {
     }
   }
 
-  private buildTimelineData(entries: TimelineEntry[]): TimelineData {
+  private buildTimelineData(entries: TimelineEntry[]): TimelineGroup {
     const points: TimelinePoint[] = [];
     const paths: TimelinePath[] = [];
 
@@ -157,7 +157,7 @@ export class IOSTimelineParser implements ITimelineParser {
       }
     }
 
-    return new TimelineData(points, paths);
+    return new TimelineGroup(points, paths);
   }
 }
 
@@ -169,7 +169,7 @@ export class AndroidTimelineParser implements ITimelineParser {
     return data && typeof data === 'object' && Array.isArray(data.semanticSegments);
   }
 
-  parse(data: any): TimelineData {
+  parse(data: any): TimelineGroup {
     const entries = data.semanticSegments
       .map((entry: any) => this.parseEntry(entry))
       .filter((e: TimelineEntry | null): e is TimelineEntry => e !== null)
@@ -233,7 +233,7 @@ export class AndroidTimelineParser implements ITimelineParser {
     }
   }
 
-  private buildTimelineData(entries: TimelineEntry[]): TimelineData {
+  private buildTimelineData(entries: TimelineEntry[]): TimelineGroup {
     const points: TimelinePoint[] = [];
     const paths: TimelinePath[] = [];
 
@@ -291,7 +291,7 @@ export class AndroidTimelineParser implements ITimelineParser {
       }
     }
 
-    return new TimelineData(points, paths);
+    return new TimelineGroup(points, paths);
   }
 }
 
@@ -304,7 +304,7 @@ export class TimelineParserFactory {
     new AndroidTimelineParser(),
   ];
 
-  static parse(data: any): TimelineData {
+  static parse(data: any): TimelineGroup {
     for (const parser of this.parsers) {
       if (parser.canParse(data)) {
         return parser.parse(data);
@@ -312,7 +312,7 @@ export class TimelineParserFactory {
     }
     
     console.warn('Unknown timeline format');
-    return new TimelineData([], []);
+    return new TimelineGroup([], []);
   }
 
   static detectFormat(data: any): TimelineFormat {

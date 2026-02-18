@@ -4,37 +4,11 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TimelineGroup } from './TimelineGroup';
+import { MapSegment } from './MapSegment';
 import { TimelinePoint } from './TimelinePoint';
 import { TimelinePath } from './TimelinePath';
 import { Statistics } from './value-objects';
 
-// Test wrapper to access protected methods
-class TestableTimelineGroup extends TimelineGroup {
-    // Expose protected methods for testing
-    public addPoints(...points: TimelinePoint[]): void {
-        super.addPoints(...points);
-    }
-
-    public addPaths(...paths: TimelinePath[]): void {
-        super.addPaths(...paths);
-    }
-
-    public removePoints(...points: TimelinePoint[]): void {
-        super.removePoints(...points);
-    }
-
-    public removePaths(...paths: TimelinePath[]): void {
-        super.removePaths(...paths);
-    }
-
-    public getPoints(): TimelinePoint[] {
-        return super.getPoints();
-    }
-
-    public getPaths(): TimelinePath[] {
-        return super.getPaths();
-    }
-}
 
 describe('TimelineGroup', () => {
     let point1: TimelinePoint;
@@ -64,35 +38,63 @@ describe('TimelineGroup', () => {
         });
 
         it('should create empty group when no arguments provided', () => {
-            const group = new TimelineGroup();
+            const group = new TimelineGroup([], []);
 
             expect(group.points.size).toBe(0);
             expect(group.paths.size).toBe(0);
         });
 
         it('should create group with only points', () => {
-            const group = new TimelineGroup([point1, point2]);
+            const group = new TimelineGroup([point1, point2], []);
 
             expect(group.points.size).toBe(2);
             expect(group.paths.size).toBe(0);
         });
 
         it('should create group with only paths', () => {
-            const group = new TimelineGroup(undefined, [path1, path2]);
+            const group = new TimelineGroup([], [path1, path2]);
 
             expect(group.points.size).toBe(0);
             expect(group.paths.size).toBe(2);
         });
 
         it('should handle duplicate points in constructor', () => {
-            const group = new TimelineGroup([point1, point1, point2]);
+            const group = new TimelineGroup([point1, point1, point2], []);
 
             // Sets automatically deduplicate
             expect(group.points.size).toBe(2);
         });
 
         it('should handle duplicate paths in constructor', () => {
-            const group = new TimelineGroup(undefined, [path1, path1]);
+            const group = new TimelineGroup([], [path1, path1]);
+
+            expect(group.paths.size).toBe(1);
+        });
+
+        it('should handle equal points in constructor', () => {
+            const point2: TimelinePoint = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
+
+            const group = new TimelineGroup([point1, point2], []);
+
+            expect(group.points.size).toBe(1);
+        });
+
+        it('should handle equal paths in constructor', () => {
+            const path2: TimelinePath = new TimelinePath(point1, point2);
+
+            const group = new TimelineGroup([], [path1, path2]);
+
+            expect(group.paths.size).toBe(1);
+        });
+
+        it('should handle equal paths in constructor 2', () => {
+            const point3 = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
+            const point4 = new TimelinePoint(point2.lat, point2.lon, point2.timestamp);
+
+            const path1: TimelinePath = new TimelinePath(point1, point2);
+            const path2: TimelinePath = new TimelinePath(point3, point4);
+
+            const group = new TimelineGroup([], [path1, path2]);
 
             expect(group.paths.size).toBe(1);
         });
@@ -114,26 +116,9 @@ describe('TimelineGroup', () => {
         });
     });
 
-    describe('createEmpty', () => {
-        it('should create empty group', () => {
-            const group = TimelineGroup.createEmpty();
-
-            expect(group).toBeInstanceOf(TimelineGroup);
-            expect(group.points.size).toBe(0);
-            expect(group.paths.size).toBe(0);
-        });
-
-        it('should return new instance each time', () => {
-            const group1 = TimelineGroup.createEmpty();
-            const group2 = TimelineGroup.createEmpty();
-
-            expect(group1).not.toBe(group2);
-        });
-    });
-
     describe('addPoints', () => {
         it('should add single point', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             group.addPoints(point1);
 
             expect(group.points.size).toBe(1);
@@ -141,7 +126,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should add multiple points', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             group.addPoints(point1, point2, point3);
 
             expect(group.points.size).toBe(3);
@@ -151,21 +136,29 @@ describe('TimelineGroup', () => {
         });
 
         it('should not duplicate existing points', () => {
-            const group = new TestableTimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
             group.addPoints(point1);
 
             expect(group.points.size).toBe(1);
         });
 
+        it('should not add equal existing points', () => {
+            const group = new TimelineGroup([point1], []);
+            const point2 = new TimelinePoint(point1.lat, point1.lon, point1.timestamp);
+            group.addPoints(point2);
+
+            expect(group.points.size).toBe(1);
+        });
+
         it('should handle empty arguments', () => {
-            const group = new TestableTimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
             group.addPoints();
 
             expect(group.points.size).toBe(1);
         });
 
         it('should add to existing points', () => {
-            const group = new TestableTimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
             group.addPoints(point2);
 
             expect(group.points.size).toBe(2);
@@ -176,7 +169,7 @@ describe('TimelineGroup', () => {
 
     describe('addPaths', () => {
         it('should add single path', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             group.addPaths(path1);
 
             expect(group.paths.size).toBe(1);
@@ -184,7 +177,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should add multiple paths', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             group.addPaths(path1, path2);
 
             expect(group.paths.size).toBe(2);
@@ -193,32 +186,40 @@ describe('TimelineGroup', () => {
         });
 
         it('should not duplicate existing paths', () => {
-            const group = new TestableTimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
             group.addPaths(path1);
 
             expect(group.paths.size).toBe(1);
         });
 
         it('should handle empty arguments', () => {
-            const group = new TestableTimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
             group.addPaths();
 
             expect(group.paths.size).toBe(1);
         });
 
         it('should add to existing paths', () => {
-            const group = new TestableTimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
             group.addPaths(path2);
 
             expect(group.paths.size).toBe(2);
             expect(group.paths.has(path1)).toBe(true);
             expect(group.paths.has(path2)).toBe(true);
         });
+
+        it('should not add equal existing paths', () => {
+            const group = new TimelineGroup([], [path1]);
+            const path2 = new TimelinePath(path1.a, path1.b);
+            group.addPaths(path2);
+
+            expect(group.paths.size).toBe(1);
+        });
     });
 
     describe('removePoints', () => {
         it('should remove single point', () => {
-            const group = new TestableTimelineGroup([point1, point2]);
+            const group = new TimelineGroup([point1, point2], []);
             group.removePoints(point1);
 
             expect(group.points.size).toBe(1);
@@ -227,7 +228,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should remove multiple points in batch', () => {
-            const group = new TestableTimelineGroup([point1, point2, point3]);
+            const group = new TimelineGroup([point1, point2, point3], []);
             group.removePoints(point1, point3);
 
             expect(group.points.size).toBe(1);
@@ -237,7 +238,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should handle removing non-existent point', () => {
-            const group = new TestableTimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
             group.removePoints(point2);
 
             expect(group.points.size).toBe(1);
@@ -245,14 +246,14 @@ describe('TimelineGroup', () => {
         });
 
         it('should handle empty arguments', () => {
-            const group = new TestableTimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
             group.removePoints();
 
             expect(group.points.size).toBe(1);
         });
 
         it('should remove all points when all are specified', () => {
-            const group = new TestableTimelineGroup([point1, point2]);
+            const group = new TimelineGroup([point1, point2], []);
             group.removePoints(point1, point2);
 
             expect(group.points.size).toBe(0);
@@ -261,7 +262,7 @@ describe('TimelineGroup', () => {
 
     describe('removePaths', () => {
         it('should remove single path', () => {
-            const group = new TestableTimelineGroup(undefined, [path1, path2]);
+            const group = new TimelineGroup([], [path1, path2]);
             group.removePaths(path1);
 
             expect(group.paths.size).toBe(1);
@@ -270,14 +271,14 @@ describe('TimelineGroup', () => {
         });
 
         it('should remove multiple paths in batch', () => {
-            const group = new TestableTimelineGroup(undefined, [path1, path2]);
+            const group = new TimelineGroup([], [path1, path2]);
             group.removePaths(path1, path2);
 
             expect(group.paths.size).toBe(0);
         });
 
         it('should handle removing non-existent path', () => {
-            const group = new TestableTimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
             group.removePaths(path2);
 
             expect(group.paths.size).toBe(1);
@@ -285,7 +286,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should handle empty arguments', () => {
-            const group = new TestableTimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
             group.removePaths();
 
             expect(group.paths.size).toBe(1);
@@ -294,7 +295,7 @@ describe('TimelineGroup', () => {
 
     describe('getPoints', () => {
         it('should return array of all points', () => {
-            const group = new TestableTimelineGroup([point1, point2]);
+            const group = new TimelineGroup([point1, point2], []);
             const points = group.getPoints();
 
             expect(Array.isArray(points)).toBe(true);
@@ -304,14 +305,14 @@ describe('TimelineGroup', () => {
         });
 
         it('should return empty array when no points', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             const points = group.getPoints();
 
             expect(points).toEqual([]);
         });
 
         it('should return references to actual points', () => {
-            const group = new TestableTimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
             const points = group.getPoints();
 
             expect(points[0]).toBe(point1);
@@ -320,7 +321,7 @@ describe('TimelineGroup', () => {
 
     describe('getPaths', () => {
         it('should return array of all paths', () => {
-            const group = new TestableTimelineGroup(undefined, [path1, path2]);
+            const group = new TimelineGroup([], [path1, path2]);
             const paths = group.getPaths();
 
             expect(Array.isArray(paths)).toBe(true);
@@ -330,14 +331,14 @@ describe('TimelineGroup', () => {
         });
 
         it('should return empty array when no paths', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             const paths = group.getPaths();
 
             expect(paths).toEqual([]);
         });
 
         it('should return references to actual paths', () => {
-            const group = new TestableTimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
             const paths = group.getPaths();
 
             expect(paths[0]).toBe(path1);
@@ -346,7 +347,7 @@ describe('TimelineGroup', () => {
 
     describe('getStatistics', () => {
         it('should return statistics with correct counts', () => {
-            const group = new TestableTimelineGroup([point1, point2, point3], [path1, path2]);
+            const group = new TimelineGroup([point1, point2, point3], [path1, path2]);
             const stats = group.getStatistics();
 
             expect(stats).toBeInstanceOf(Statistics);
@@ -355,7 +356,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should return zero statistics for empty group', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             const stats = group.getStatistics();
 
             expect(stats.totalPoints).toBe(0);
@@ -363,7 +364,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should return statistics with only points', () => {
-            const group = new TestableTimelineGroup([point1, point2]);
+            const group = new TimelineGroup([point1, point2], []);
             const stats = group.getStatistics();
 
             expect(stats.totalPoints).toBe(2);
@@ -371,7 +372,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should return statistics with only paths', () => {
-            const group = new TestableTimelineGroup(undefined, [path1, path2]);
+            const group = new TimelineGroup([], [path1, path2]);
             const stats = group.getStatistics();
 
             expect(stats.totalPoints).toBe(0);
@@ -379,7 +380,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should reflect changes after adding points', () => {
-            const group = new TestableTimelineGroup();
+            const group = new TimelineGroup([], []);
             group.addPoints(point1);
 
             const stats = group.getStatistics();
@@ -387,7 +388,7 @@ describe('TimelineGroup', () => {
         });
 
         it('should reflect changes after removing points', () => {
-            const group = new TestableTimelineGroup([point1, point2]);
+            const group = new TimelineGroup([point1, point2], []);
             group.removePoints(point1);
 
             const stats = group.getStatistics();
@@ -397,14 +398,14 @@ describe('TimelineGroup', () => {
 
     describe('readonly sets', () => {
         it('should expose points as readonly set', () => {
-            const group = new TimelineGroup([point1]);
+            const group = new TimelineGroup([point1], []);
 
             expect(group.points).toBeInstanceOf(Set);
             expect(group.points.has(point1)).toBe(true);
         });
 
         it('should expose paths as readonly set', () => {
-            const group = new TimelineGroup(undefined, [path1]);
+            const group = new TimelineGroup([], [path1]);
 
             expect(group.paths).toBeInstanceOf(Set);
             expect(group.paths.has(path1)).toBe(true);
@@ -416,5 +417,62 @@ describe('TimelineGroup', () => {
             expect(group.points.size).toBe(2);
             expect(group.paths.size).toBe(1);
         });
+    });
+});
+
+describe('MapSegment', () => {
+    let point1: TimelinePoint;
+    let point2: TimelinePoint;
+    let path1: TimelinePath;
+
+    beforeEach(() => {
+        const timestamp = new Date();
+        point1 = new TimelinePoint(47.6062, -122.3321, timestamp);
+        point2 = new TimelinePoint(47.6205, -122.3493, timestamp);
+        path1 = new TimelinePath(point1, point2);
+    });
+
+    it('is an instance of TimelineGroup', () => {
+        expect(new MapSegment(0)).toBeInstanceOf(TimelineGroup);
+    });
+
+    it('exposes its index', () => {
+        expect(new MapSegment(42).index).toBe(42);
+    });
+
+    it('inherits addPoints / getPoints from TimelineGroup', () => {
+        const segment = new MapSegment(0);
+        segment.addPoints(point1, point2);
+        expect(segment.getPoints()).toHaveLength(2);
+    });
+
+    it('inherits addPaths / getPaths from TimelineGroup', () => {
+        const segment = new MapSegment(0);
+        segment.addPaths(path1);
+        expect(segment.getPaths()).toHaveLength(1);
+    });
+
+    it('inherits removePoints from TimelineGroup', () => {
+        const segment = new MapSegment(0);
+        segment.addPoints(point1, point2);
+        segment.removePoints(point1);
+        expect(segment.getPoints()).toHaveLength(1);
+    });
+
+    it('inherits removePaths from TimelineGroup', () => {
+        const segment = new MapSegment(0);
+        segment.addPaths(path1);
+        segment.removePaths(path1);
+        expect(segment.getPaths()).toHaveLength(0);
+    });
+
+    it('inherits getStatistics from TimelineGroup', () => {
+        const segment = new MapSegment(0);
+        segment.addPoints(point1);
+        segment.addPaths(path1);
+        const stats = segment.getStatistics();
+        expect(stats).toBeInstanceOf(Statistics);
+        expect(stats.totalPoints).toBe(1);
+        expect(stats.totalPaths).toBe(1);
     });
 });

@@ -19,4 +19,25 @@ export class TimelinePath {
         this.b = b;
         this.length = a.distanceTo(b);
     }
+
+    key(): string {
+        return `${this.a.key()}=>${this.b.key()}`;
+    }
+
+    equals(other: TimelinePath): boolean {
+        return this.a.equals(other.a) && this.b.equals(other.b);
+    }
+
+    toJson(): any {
+        return {
+            a: this.a.toJson(),
+            b: this.b.toJson()
+        };
+    }
+
+    static fromJson(json: any): TimelinePath {
+        const a = TimelinePoint.fromJson(json.a);
+        const b = TimelinePoint.fromJson(json.b);
+        return new TimelinePath(a, b);
+    }
 }
