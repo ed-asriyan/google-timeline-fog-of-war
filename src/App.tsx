@@ -36,6 +36,11 @@ const styles = `
   .custom-scrollbar:hover::-webkit-scrollbar-thumb {
     background: #d1d5db; 
   }
+  @keyframes progress {
+    0%   { margin-left: -40%; width: 40%; }
+    50%  { margin-left: 60%; width: 40%; }
+    100% { margin-left: 110%; width: 10%; }
+  }
 `;
 
 interface AppProps {
@@ -67,11 +72,17 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
   // Viewport query state (async — populated via useEffect below)
   const [points, setPoints] = useState<TimelinePoint[]>([]);
   const [segments, setSegments] = useState<TimelinePath[]>([]);
+  const [isQuerying, setIsQuerying] = useState(false);
 
   // Query viewport data using the service (async)
   useEffect(() => {
     let cancelled = false;
     const query = async () => {
+      setIsQuerying(true);
+      // Double-RAF: first fires before paint, second fires after it —
+      // guarantees the browser actually renders the loading bar before we block.
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled) return;
       const zoomFactor = Math.max(1, viewport.zoom);
       const latRange = 180 / Math.pow(1.5, zoomFactor);
       const lonRange = 360 / Math.pow(1.5, zoomFactor);
@@ -91,6 +102,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
       if (!cancelled) {
         setPoints(Array.from(result.points));
         setSegments(Array.from(result.paths));
+        setIsQuerying(false);
       }
     };
     query();
@@ -195,6 +207,18 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
       <div className="flex-1 relative isolate">
         <div ref={mapContainerRef} className="absolute inset-0 z-0 bg-gray-200" />
         <canvas ref={canvasRef} className="absolute inset-0 z-10 pointer-events-none" />
+        {/* Viewport query progress bar */}
+        {hasData && (
+          <div
+            className={`absolute bottom-0 left-0 right-0 z-20 h-[3px] pointer-events-none transition-opacity duration-300 ${
+              isQuerying ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <div className="h-full bg-blue-200">
+              <div className="h-full bg-blue-500 animate-[progress_1.4s_ease-in-out_infinite]" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
