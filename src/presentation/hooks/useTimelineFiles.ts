@@ -18,9 +18,7 @@ export function useTimelineFiles(service: TimelineFileService) {
   const uploadFiles = useCallback(async (fileList: File[]) => {
     setIsProcessing(true);
     try {
-      for (const file of fileList) {
-        await service.uploadFile(file);
-      }
+      await service.addFiles(...fileList);
       setDataVersion(v => v + 1);
       setHasData(true);
       analytics.track('Files Processed', { fileCount: fileList.length });

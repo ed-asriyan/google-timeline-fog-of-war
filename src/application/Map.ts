@@ -79,11 +79,19 @@ export class TimelineFileService {
   /**
    * Upload and process timeline files
    */
-  async uploadFile(file: File): Promise<void> {
+  async addFiles(...file: File[]): Promise<void> {
     await this.cache.invalidate();
-    const cache = new MapApplication(this.repository, Infinity);
 
-    const timelineGroup = await this.processFile(file);
+    const timelineGroup = (await Promise.all(file.map(f => this.processFile(f)))).reduce((group, data) => {
+      group.mergeFrom(data);
+      return group;
+    }, new TimelineGroup());
+
+    await this.addGroup(timelineGroup);
+  }
+
+  async addGroup(timelineGroup: TimelineGroup): Promise<void> {
+    const cache = new MapApplication(this.repository, Infinity);
 
     const touchedSegments = new Set<number>();
 
