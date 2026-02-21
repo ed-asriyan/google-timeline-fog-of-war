@@ -5,6 +5,13 @@ import L from 'leaflet';
 import { TimelinePoint, TimelinePath, LocationPoint } from '../../domains/map';
 import { FogSettings } from '../../domains/settings';
 
+export interface MapBoundsRect {
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+}
+
 interface UseMapResult {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -23,7 +30,8 @@ export function useMap(
   segments: TimelinePath[],
   settings: FogSettings,
   viewport: MapViewport,
-  onViewportChange: (lat: number, lng: number, zoom: number) => void
+  onViewportChange: (lat: number, lng: number, zoom: number) => void,
+  onBoundsChange?: (bounds: MapBoundsRect) => void
 ): UseMapResult {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -46,12 +54,27 @@ export function useMap(
 
     L.control.attribution({ position: 'bottomright' }).addTo(map);
 
+    const fireBounds = (m: L.Map) => {
+      if (!onBoundsChange) return;
+      const b = m.getBounds();
+      onBoundsChange({
+        minLat: b.getSouth(),
+        maxLat: b.getNorth(),
+        minLon: b.getWest(),
+        maxLon: b.getEast(),
+      });
+    };
+
     // Save viewport on move/zoom (with debouncing through moveend)
     map.on('moveend', () => {
       const center = map.getCenter();
       const zoom = map.getZoom();
       onViewportChange(center.lat, center.lng, zoom);
+      fireBounds(map);
     });
+
+    // Fire initial bounds once the map is ready
+    map.whenReady(() => fireBounds(map));
 
     mapInstanceRef.current = map;
 

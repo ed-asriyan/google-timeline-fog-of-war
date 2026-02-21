@@ -10,7 +10,7 @@ import { TimelinePath } from './domains/map/TimelinePath';
 import { useTimelineFiles } from './presentation/hooks/useTimelineFiles';
 import { useFogSettings } from './presentation/hooks/useFogSettings';
 import { useMapViewport } from './presentation/hooks/useMapViewport';
-import { useMap } from './presentation/hooks/useMap';
+import { useMap, MapBoundsRect } from './presentation/hooks/useMap';
 import { SidePanel } from './presentation/components/SidePanel';
 import { AddressSearch } from './presentation/components/AddressSearch';
 import { getSharedFiles } from './utils/share-target';
@@ -67,24 +67,26 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
   // Viewport query state (async — populated via useEffect below)
   const [points, setPoints] = useState<TimelinePoint[]>([]);
   const [segments, setSegments] = useState<TimelinePath[]>([]);
+  const [mapBounds, setMapBounds] = useState<MapBoundsRect | null>(null);
 
   // Query viewport data using the service (async)
   useEffect(() => {
+    if (!mapBounds) return;
     let cancelled = false;
     const query = async () => {
-      const zoomFactor = Math.max(1, viewport.zoom);
-      const latRange = 180 / Math.pow(1.5, zoomFactor);
-      const lonRange = 360 / Math.pow(1.5, zoomFactor);
-      const pad = Math.max(5, settings.getRadius() / 111);
-
-      const minLat = Math.max(-90, viewport.lat - latRange - pad);
-      const maxLat = Math.min(90, viewport.lat + latRange + pad);
-      const minLon = Math.max(-180, viewport.lng - lonRange - pad);
-      const maxLon = Math.min(180, viewport.lng + lonRange + pad);
+      // Add a small padding (radius) beyond visible area so fog circles near
+      // the edge are fully rendered
+      const padDeg = settings.getRadius() / 111;
 
       const bounds = new MapBounds(
-        new LocationPoint(minLat, minLon),
-        new LocationPoint(maxLat, maxLon)
+        new LocationPoint(
+          Math.max(-90, mapBounds.minLat - padDeg),
+          Math.max(-180, mapBounds.minLon - padDeg)
+        ),
+        new LocationPoint(
+          Math.min(90, mapBounds.maxLat + padDeg),
+          Math.min(180, mapBounds.maxLon + padDeg)
+        )
       );
 
       const result = await timelineFileService.queryViewport(bounds);
@@ -95,7 +97,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     };
     query();
     return () => { cancelled = true; };
-  }, [timelineFileService, dataVersion, viewport, settings]);
+  }, [timelineFileService, dataVersion, mapBounds, settings]);
 
   // Map management
   const { mapContainerRef, canvasRef, flyToLocation } = useMap(
@@ -103,7 +105,8 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     segments, 
     settings,
     viewport,
-    updateViewport
+    updateViewport,
+    setMapBounds
   );
 
   // Track whether shared files have been checked
