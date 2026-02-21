@@ -77,11 +77,7 @@ export class IndexedDbMapSegmentRepository implements MapSegmentRepository {
 
             request.onupgradeneeded = (event) => {
                 const db = (event.target as IDBOpenDBRequest).result;
-                // Drop the store on any schema upgrade so stale serialized data
-                // from an old version doesn't corrupt the new schema.
-                if (db.objectStoreNames.contains(this.storeName)) {
-                    db.deleteObjectStore(this.storeName);
-                }
+
                 db.createObjectStore(this.storeName, { keyPath: 'id' });
             };
 
