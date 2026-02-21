@@ -4,6 +4,9 @@ import { Map, MapBounds, TimelineGroup } from '@/domains/map';
 import { MapSegment } from '@/domains/map/MapSegment';
 import { MapSegmentRepository } from '@/domains/ports';
 import { TimelineParserFactory } from '@/infrastructure/parsers/TimelineParser';
+import { createLogger } from '@/utils/log';
+
+const log = createLogger('MapApplication');
 
 class MapApplication {
   private cache: Record<number, MapSegment>;
@@ -17,35 +20,44 @@ class MapApplication {
   }
 
   async invalidate(): Promise<void> {
+    log('Cache invalidated');
     this.cache = {};
   }
 
   async loadSegment(id: number): Promise<MapSegment> {
     if (this.cache[id]) {
+      log(`Segment ${id} loaded from cache (cache size: ${Object.keys(this.cache).length})`);
       return this.cache[id];
     }
 
+    log(`Segment ${id} not in cache, loading from repository (cache size: ${Object.keys(this.cache).length})`);
+
     const segment = await this.repository.loadSegment(id);
     if (Object.keys(this.cache).length >= this.maxCacheSize) {
-      this.invalidateCache();
+      log(`Cache size limit (${this.maxCacheSize}) reached, invalidating`);
+      await this.invalidateCache();
     }
     this.cache[id] = segment;
     return segment;
   }
 
   async invalidateCache(): Promise<void> {
+    log('Cache invalidated');
     this.cache = {};
   }
 
   async flushSegment(id: number): Promise<void> {
     const segment = this.cache[id];
     if (segment) {
+      log(`Flushing segment ${id} to repository`);
       await this.repository.saveSegment(segment);
     }
   }
 
   async flushAll(): Promise<void> {
-    await Promise.all(Object.keys(this.cache).map(id => this.flushSegment(Number(id))));
+    const ids = Object.keys(this.cache);
+    log(`Flushing ${ids.length} segment(s) to repository`);
+    await Promise.all(ids.map(id => this.flushSegment(Number(id))));
   }
 }
 
@@ -64,7 +76,9 @@ export class TimelineFileService {
   }
 
   async queryViewport(bounds: MapBounds): Promise<TimelineGroup> {
+    const timeStart = performance.now();
     const segmentIds = this.map.getSegmentIdsForBound(bounds);
+    log(`Querying viewport ${bounds.toString()}: ${segmentIds.join(', ')}`);
 
     const mapSegments = await Promise.all(segmentIds.map(id => this.cache.loadSegment(id)));
 
@@ -73,6 +87,8 @@ export class TimelineFileService {
       return result;
     }, new TimelineGroup());
 
+    const timeEnd = performance.now();
+    log(`Viewport query complete: ${result.points.length} point(s), ${result.paths.length} path(s) in ${(timeEnd - timeStart).toFixed(2)} ms`);
     return result;
   }
 
@@ -80,6 +96,7 @@ export class TimelineFileService {
    * Upload and process timeline files
    */
   async addFiles(...file: File[]): Promise<void> {
+    log(`Adding ${file.length} file(s): ${file.map(f => f.name).join(', ')}`);
     await this.cache.invalidate();
 
     const timelineGroup = (await Promise.all(file.map(f => this.processFile(f)))).reduce((group, data) => {
@@ -87,10 +104,12 @@ export class TimelineFileService {
       return group;
     }, new TimelineGroup());
 
+    log(`Parsed ${timelineGroup.points.length} point(s) and ${timelineGroup.paths.length} path(s) from files`);
     await this.addGroup(timelineGroup);
   }
 
   async addGroup(timelineGroup: TimelineGroup): Promise<void> {
+    log(`Adding group: ${timelineGroup.points.length} point(s), ${timelineGroup.paths.length} path(s)`);
     const cache = new MapApplication(this.repository, Infinity);
 
     const touchedSegments = new Set<number>();
@@ -115,11 +134,14 @@ export class TimelineFileService {
     }
 
     await cache.flushAll();
+    log(`addGroup complete, ${touchedSegments.size} segment(s) updated`);
   }
 
   async clearAll(): Promise<void> {
+    log('Clearing all map data');
     await this.cache.invalidate();
     await this.repository.clear();
+    log('All map data cleared');
   }
 
   async hasData(): Promise<boolean> {
@@ -127,6 +149,7 @@ export class TimelineFileService {
   }
 
   private async processFile(file: File): Promise<TimelineGroup> {
+    log(`Processing file: ${file.name}`);
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -134,13 +157,18 @@ export class TimelineFileService {
         try {
           const json = JSON.parse(event.target?.result as string);
           const data = TimelineParserFactory.parse(json);
+          log(`Parsed file ${file.name}: ${data.points.length} point(s), ${data.paths.length} path(s)`);
           resolve(data);
         } catch (error) {
+          console.error('[Map] Failed to parse', file.name, error);
           reject(new Error(`Failed to parse ${file.name}: ${error}`));
         }
       };
 
-      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+      reader.onerror = () => {
+        console.error('[Map] Failed to read', file.name);
+        reject(new Error(`Failed to read ${file.name}`));
+      };
       reader.readAsText(file);
     });
   }

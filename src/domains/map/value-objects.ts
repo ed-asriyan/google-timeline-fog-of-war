@@ -44,6 +44,10 @@ export class LocationPoint {
 
         return R * c;
     }
+
+    toString(): string {
+        return `(${this.lat.toFixed(6)}, ${this.lon.toFixed(6)})`;
+    }
 }
 
 /**
@@ -56,6 +60,10 @@ export class MapBounds {
     constructor(a: LocationPoint, b: LocationPoint) {
         this.a = a;
         this.b = b;
+    }
+
+    toString(): string {
+        return `(${this.a.toString()} : ${this.b.toString()})`;
     }
 }
 
