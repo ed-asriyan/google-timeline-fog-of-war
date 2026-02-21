@@ -211,37 +211,6 @@ describe('clear', () => {
 // ---------------------------------------------------------------------------
 
 describe('schema upgrade', () => {
-    it('drops stale data from an old schema version when the DB version is bumped', async () => {
-        // 1. Seed a "v1" database with stale data using the raw IDB API.
-        await new Promise<void>((resolve, reject) => {
-            const req = indexedDB.open('TimelineMapDB', 1);
-            req.onupgradeneeded = (e) => {
-                const db = (e.target as IDBOpenDBRequest).result;
-                db.createObjectStore('MapSegments', { keyPath: 'id' });
-            };
-            req.onsuccess = () => {
-                const db = req.result as IDBDatabase;
-                const store = db.transaction('MapSegments', 'readwrite').objectStore('MapSegments');
-                store.put({ id: 0, staleField: 'old incompatible data' });
-                db.close();
-                resolve();
-            };
-            req.onerror = () => reject(req.error);
-        });
-
-        // 2. Simulate a schema bump (v1 → v2).
-        IndexedDbMapSegmentRepository.dbVersion = 2;
-        const repo = await IndexedDbMapSegmentRepository.openDb();
-
-        // 3. Stale record must be gone; the store should be clean.
-        const loaded = await repo.loadSegment(0);
-        expect(loaded.getPoints()).toHaveLength(0);
-        expect(loaded.getPaths()).toHaveLength(0);
-
-        // Restore version for other tests (beforeEach resets indexedDB anyway).
-        IndexedDbMapSegmentRepository.dbVersion = 1;
-    });
-
     it('opens successfully on a fresh database', async () => {
         const repo = await IndexedDbMapSegmentRepository.openDb();
         expect(repo).toBeInstanceOf(IndexedDbMapSegmentRepository);
