@@ -53,6 +53,9 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     clearAll,
   } = useTimelineFiles(timelineFileService);
 
+  // Error state
+  const [error, setError] = useState<string | null>(null);
+
   const {
     settings,
     isPanelOpen,
@@ -74,25 +77,31 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     if (!mapBounds) return;
     let cancelled = false;
     const query = async () => {
-      // Add a small padding (radius) beyond visible area so fog circles near
-      // the edge are fully rendered
-      const padDeg = settings.getRadius() / 111;
+      try {
+        // Add a small padding (radius) beyond visible area so fog circles near
+        // the edge are fully rendered
+        const padDeg = settings.getRadius() / 111;
 
-      const bounds = new MapBounds(
-        new LocationPoint(
-          Math.max(-90, mapBounds.minLat - padDeg),
-          Math.max(-180, mapBounds.minLon - padDeg)
-        ),
-        new LocationPoint(
-          Math.min(90, mapBounds.maxLat + padDeg),
-          Math.min(180, mapBounds.maxLon + padDeg)
-        )
-      );
+        const bounds = new MapBounds(
+          new LocationPoint(
+            Math.max(-90, mapBounds.minLat - padDeg),
+            Math.max(-180, mapBounds.minLon - padDeg)
+          ),
+          new LocationPoint(
+            Math.min(90, mapBounds.maxLat + padDeg),
+            Math.min(180, mapBounds.maxLon + padDeg)
+          )
+        );
 
-      const result = await timelineFileService.queryViewport(bounds);
-      if (!cancelled) {
-        setPoints(Array.from(result.points));
-        setSegments(Array.from(result.paths));
+        const result = await timelineFileService.queryViewport(bounds);
+        if (!cancelled) {
+          setPoints(Array.from(result.points));
+          setSegments(Array.from(result.paths));
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err?.message || 'An error occurred while loading map data.');
+        }
       }
     };
     query();
@@ -129,6 +138,18 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
 
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-gray-50 text-gray-900 font-sans overflow-hidden relative">
+      {/* Error Alert */}
+      {error && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-red-600 text-white p-4 rounded-xl shadow-xl text-sm border border-red-700/50 animate-in fade-in slide-in-from-top-4 duration-500">
+          <strong>Error:</strong> {error}
+          <button
+            className="ml-4 bg-white text-red-600 px-2 py-1 rounded hover:bg-red-100 border border-red-200"
+            onClick={() => setError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <style>{styles}</style>
 
       {/* Side Panel */}
