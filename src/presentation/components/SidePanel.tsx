@@ -5,6 +5,7 @@ import { Map as MapIcon, X, Trash2 } from 'lucide-react';
 import { ControlPanel } from './ControlPanel';
 import { FileUpload } from './FileUpload';
 import { FogSettings } from '../../domains/settings';
+import { LoadingState } from '../../application/Map';
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface SidePanelProps {
   onToggleRoads: () => void;
   onMaxLinkDistanceChange: (distance: number) => void;
   isProcessing: boolean;
+  loadingState: LoadingState;
   hasData: boolean;
   onFilesSelected: (files: File[]) => void;
   onClearAll: () => void;
@@ -27,6 +29,7 @@ export function SidePanel({
   onToggleRoads,
   onMaxLinkDistanceChange,
   isProcessing,
+  loadingState,
   hasData,
   onFilesSelected,
   onClearAll,
@@ -75,7 +78,7 @@ export function SidePanel({
 
         {/* Action Buttons Area */}
         <div className="p-3 border-t border-gray-100 bg-white flex flex-col">
-          <FileUpload isProcessing={isProcessing} onFilesSelected={onFilesSelected} />
+          <FileUpload loadingState={loadingState} onFilesSelected={onFilesSelected} />
           {hasData && (
             <button
               onClick={onClearAll}

@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Plus, Database, ExternalLink } from 'lucide-react';
+import { LoadingState } from '../../application/Map';
 import { analytics } from '../../infrastructure/analytics';
 
 const PROCESSING_MESSAGES = [
@@ -13,23 +14,21 @@ const PROCESSING_MESSAGES = [
 ];
 
 interface FileUploadProps {
-  isProcessing: boolean;
+  loadingState: LoadingState;
   onFilesSelected: (files: File[]) => void;
 }
 
-export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
+export function FileUpload({ loadingState, onFilesSelected }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [messageIndex, setMessageIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState('');
+  const isProcessing = loadingState.status !== 'idle';
 
   useEffect(() => {
     if (!isProcessing) {
-      setMessageIndex(0);
       setCurrentTime('');
       return;
     }
     const tick = () => {
-      setMessageIndex(i => (i + 1) % PROCESSING_MESSAGES.length);
       setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
     };
     tick();
@@ -49,6 +48,10 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
       }
     }
   };
+
+  const processingLabel = loadingState.status === 'parsing'
+    ? `Parsing locations... ${loadingState.progress}%`
+    : 'Loading files...';
 
   return (
     <div>
@@ -94,10 +97,10 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
                 </svg>
-                {PROCESSING_MESSAGES[messageIndex]}
+                {processingLabel}
               </span>
               <span className="text-[10px] font-normal opacity-75 leading-none mt-0.5">
-                This may take a while · as of {currentTime}
+                As of {currentTime}
               </span>
             </>
           ) : (

@@ -49,6 +49,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     dataVersion,
     hasData,
     isProcessing,
+    loadingState,
     uploadFiles,
     clearAll,
   } = useTimelineFiles(timelineFileService);
@@ -161,6 +162,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
         onToggleRoads={toggleConnectPaths}
         onMaxLinkDistanceChange={updatePathLength}
         isProcessing={isProcessing}
+        loadingState={loadingState}
         hasData={hasData}
         onFilesSelected={uploadFiles}
         onClearAll={clearAll}

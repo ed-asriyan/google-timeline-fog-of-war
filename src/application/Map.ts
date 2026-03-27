@@ -21,7 +21,7 @@ interface LoadingStateParsing {
   progress: number; // 0 to 100
 }
 
-type LoadingState = LoadingStateIdle | LoadingStateLoading | LoadingStateParsing;
+export type LoadingState = LoadingStateIdle | LoadingStateLoading | LoadingStateParsing;
 
 class MapApplication {
   private cache: Record<number, MapSegment>;
