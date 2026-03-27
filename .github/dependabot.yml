@@ -11,9 +11,6 @@ updates:
       all-dependencies:
         patterns:
           - "*"
-        update-types:
-          - "minor"
-          - "major"
   
   - package-ecosystem: "github-actions"
     directory: "/"
