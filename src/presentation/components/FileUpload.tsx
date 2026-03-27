@@ -1,8 +1,16 @@
 // Presentation Layer: File Upload Component
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Plus, Database, ExternalLink } from 'lucide-react';
 import { analytics } from '../../infrastructure/analytics';
+
+const PROCESSING_MESSAGES = [
+  'Processing files…',
+  'Parsing locations…',
+  'Mapping your journey…',
+  'Storing data…',
+  'Almost there…',
+];
 
 interface FileUploadProps {
   isProcessing: boolean;
@@ -11,6 +19,23 @@ interface FileUploadProps {
 
 export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setMessageIndex(0);
+      setCurrentTime('');
+      return;
+    }
+    const tick = () => {
+      setMessageIndex(i => (i + 1) % PROCESSING_MESSAGES.length);
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }));
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [isProcessing]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -69,10 +94,10 @@ export function FileUpload({ isProcessing, onFilesSelected }: FileUploadProps) {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                   />
                 </svg>
-                Processing files…
+                {PROCESSING_MESSAGES[messageIndex]}
               </span>
               <span className="text-[10px] font-normal opacity-75 leading-none mt-0.5">
-                This may take a while
+                This may take a while · as of {currentTime}
               </span>
             </>
           ) : (

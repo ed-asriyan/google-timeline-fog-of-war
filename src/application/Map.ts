@@ -8,6 +8,21 @@ import { createLogger } from '@/utils/log';
 
 const log = createLogger('MapApplication');
 
+interface LoadingStateIdle {
+  status: 'idle';
+}
+
+interface LoadingStateLoading {
+  status: 'loading';
+}
+
+interface LoadingStateParsing {
+  status: 'parsing';
+  progress: number; // 0 to 100
+}
+
+type LoadingState = LoadingStateIdle | LoadingStateLoading | LoadingStateParsing;
+
 class MapApplication {
   private cache: Record<number, MapSegment>;
   private readonly maxCacheSize: number;
@@ -65,14 +80,18 @@ class MapApplication {
  * Use case for managing timeline files and map
  */
 export class TimelineFileService {
-  private map: Map = new Map();;
+  private map: Map = new Map();
   private cache: MapApplication;
   private repository: MapSegmentRepository;
+  private loadingState: LoadingState = { status: 'idle' };
 
   constructor(repository: MapSegmentRepository) {
     this.repository = repository;
     this.cache = new MapApplication(this.repository, 100);
+  }
 
+  getCurrentLoadingState(): LoadingState {
+    return this.loadingState;
   }
 
   async queryViewport(bounds: MapBounds): Promise<TimelineGroup> {
@@ -96,19 +115,31 @@ export class TimelineFileService {
    * Upload and process timeline files
    */
   async addFiles(...file: File[]): Promise<void> {
-    log(`Adding ${file.length} file(s): ${file.map(f => f.name).join(', ')}`);
-    await this.cache.invalidate();
+    this.loadingState = { status: 'loading' };
+    try {
+      log(`Adding ${file.length} file(s): ${file.map(f => f.name).join(', ')}`);
+      await this.cache.invalidate();
 
-    const timelineGroup = (await Promise.all(file.map(f => this.processFile(f)))).reduce((group, data) => {
-      group.mergeFrom(data);
-      return group;
-    }, new TimelineGroup());
+      this.loadingState = { status: 'parsing', progress: 0 };
+      const parsedGroups = await Promise.all(file.map(f => this.processFile(f)));
+      const total = parsedGroups.reduce((sum, g) => sum + g.points.length + g.paths.length, 0);
 
-    log(`Parsed ${timelineGroup.points.length} point(s) and ${timelineGroup.paths.length} path(s) from files`);
-    await this.addGroup(timelineGroup);
+      const timelineGroup = new TimelineGroup();
+      let loaded = 0;
+      for (const data of parsedGroups) {
+        timelineGroup.mergeFrom(data);
+        loaded += data.points.length + data.paths.length;
+        this.loadingState = { status: 'parsing', progress: total === 0 ? 100 : Math.round((loaded / total) * 100) };
+      }
+
+      log(`Parsed ${timelineGroup.points.length} point(s) and ${timelineGroup.paths.length} path(s) from files`);
+      await this.addGroup(timelineGroup);
+    } finally {
+      this.loadingState = { status: 'idle' };
+    }
   }
 
-  async addGroup(timelineGroup: TimelineGroup): Promise<void> {
+  private async addGroup(timelineGroup: TimelineGroup): Promise<void> {
     log(`Adding group: ${timelineGroup.points.length} point(s), ${timelineGroup.paths.length} path(s)`);
     const cache = new MapApplication(this.repository, Infinity);
 
