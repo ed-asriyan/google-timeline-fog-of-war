@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "npm"
     directory: "/"
+    open-pull-requests-limit: 1
     schedule:
       interval: "weekly"
     ignore:
@@ -14,6 +15,7 @@ updates:
   
   - package-ecosystem: "github-actions"
     directory: "/"
+    open-pull-requests-limit: 1
     schedule:
       interval: "weekly"
     groups:
