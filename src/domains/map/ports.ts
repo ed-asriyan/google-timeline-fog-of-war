@@ -40,8 +40,7 @@ export interface Settings {
 export interface MapApp {
   loadPoints(data: string): Promise<void>;
   clear(): Promise<void>;
-  getPoints(bounds: Bounds): Promise<TimelinePoint[]>;
-  getPaths(bounds: Bounds): Promise<TimelinePath[]>;
+  getData(bounds: Bounds): Promise<Group>;
   getStatistics(bounds: Bounds): Promise<Statistics>;
   getSettings(): Promise<Settings>;
   saveSettings(settings: Settings): Promise<void>;

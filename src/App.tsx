@@ -10,7 +10,7 @@ import { SidePanel } from './presentation/components/SidePanel';
 import { AddressSearch } from './presentation/components/AddressSearch';
 import { getSharedFiles } from './utils/share-target';
 import { Map } from './domains/map/app';
-import { MapSegmentRepository } from './domains/map/ports';
+import { MapSegmentRepository, TimelinePoint, TimelinePath } from './domains/map/ports';
 
 const styles = `
   .leaflet-container {
@@ -90,12 +90,11 @@ export default function App({ mapApp, mapSegmentRepository }: AppProps) {
           }
         };
 
-        const resultPoints = await mapApp.getPoints(bounds);
-        const resultPaths = await mapApp.getPaths(bounds);
+        const resultData = await mapApp.getData(bounds);
         
         if (!cancelled) {
-          setPoints(resultPoints);
-          setSegments(resultPaths);
+          setPoints(resultData.points);
+          setSegments(resultData.paths);
         }
       } catch (err: any) {
         if (!cancelled) {
