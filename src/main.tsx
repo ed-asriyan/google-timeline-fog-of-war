@@ -6,15 +6,17 @@ import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { analytics } from './infrastructure/analytics'
 import { IndexedDbMapSegmentRepository } from './infrastructure/repositories/IndexedDbMapSegmentRepository'
-import { LocalStorageSettingsRepository } from './infrastructure/repositories/LocalStorageSettingsRepository'
-import { TimelineFileService } from './application/Map'
-import { SettingsApplication } from './application/Settings'
+import { MapSettingsRepository } from './infrastructure/repositories/MapSettingsRepository'
+import { Map as MapApp } from './domains/map/app'
+
+import { TimelineParserFactory } from './infrastructure/parsers/TimelineParser'
 
 // Initialize analytics
 analytics.init();
 
 // Register service worker for PWA functionality
 registerSW({
+// ... (skipping SW registration detail limit)
   immediate: true,
   onNeedRefresh() {
     console.log('New content available, please refresh.');
@@ -43,13 +45,14 @@ if ('serviceWorker' in navigator) {
 
 // Create infrastructure and application objects, then render
 IndexedDbMapSegmentRepository.openDb().then(mapSegmentRepository => {
-  const settingsRepository = new LocalStorageSettingsRepository();
-  const timelineFileService = new TimelineFileService(mapSegmentRepository);
-  const settingsService = new SettingsApplication(settingsRepository);
+  const mapSettingsRepository = new MapSettingsRepository();
+  
+  const parser = new TimelineParserFactory();
+  const mapApp = new MapApp(mapSegmentRepository, parser, mapSettingsRepository);
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-      <App timelineFileService={timelineFileService} settingsService={settingsService} />
+      <App mapApp={mapApp} mapSegmentRepository={mapSegmentRepository} />
     </React.StrictMode>,
   );
 }).catch(err => {

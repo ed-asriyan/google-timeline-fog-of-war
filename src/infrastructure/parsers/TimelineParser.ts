@@ -1,6 +1,12 @@
 // Infrastructure Layer: Timeline format parsers
 
-import { TimelinePoint, TimelinePath, LocationPoint, TimelineGroup } from '@/domains/map';
+import { 
+  TimelinePoint, 
+  TimelinePath, 
+  LocationPoint, 
+  Group as TimelineGroup,
+  ParserPort 
+} from '@/domains/map/ports';
 
 export type TimelineFormat = 'ios' | 'android' | 'unknown';
 
@@ -16,7 +22,7 @@ interface TimelineEntry {
 /**
  * Base parser interface
  */
-interface ITimelineParser {
+interface ITimelineParser extends ParserPort {
   canParse(data: any): boolean;
   parse(data: any): TimelineGroup;
 }
@@ -26,6 +32,9 @@ interface ITimelineParser {
  */
 export class IOSTimelineParser implements ITimelineParser {
   canParse(data: any): boolean {
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch { return false; }
+    }
     if (!Array.isArray(data) || data.length === 0) return false;
     const first = data[0];
     return (
@@ -35,11 +44,14 @@ export class IOSTimelineParser implements ITimelineParser {
     );
   }
 
-  parse(data: any[]): TimelineGroup {
+  parse(data: any): TimelineGroup {
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
     const entries = data
-      .map(entry => this.parseEntry(entry))
-      .filter((e): e is TimelineEntry => e !== null)
-      .sort((a, b) => {
+      .map((entry: any) => this.parseEntry(entry))
+      .filter((e: TimelineEntry | null): e is TimelineEntry => e !== null)
+      .sort((a: TimelineEntry, b: TimelineEntry) => {
         const timeA = a.startTime ? new Date(a.startTime).getTime() : 0;
         const timeB = b.startTime ? new Date(b.startTime).getTime() : 0;
         return timeA - timeB;
@@ -93,7 +105,7 @@ export class IOSTimelineParser implements ITimelineParser {
     if (parts.length !== 2) return null;
     
     try {
-      return new LocationPoint(parseFloat(parts[0]), parseFloat(parts[1]));
+      return { lat: parseFloat(parts[0]), lon: parseFloat(parts[1]) };
     } catch {
       return null;
     }
@@ -105,25 +117,27 @@ export class IOSTimelineParser implements ITimelineParser {
 
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
-      const timestamp = curr.startTime ? new Date(curr.startTime) : new Date();
+      const timestamp = curr.startTime ? new Date(curr.startTime).getTime() : new Date().getTime();
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
         // Add all points from the path
         for (const loc of curr.pathPoints) {
-          points.push(new TimelinePoint(loc.lat, loc.lon, timestamp));
+          points.push({ lat: loc.lat, lon: loc.lon, timestamp });
         }
         
         // Create paths between consecutive points in the path
-        for (let j = 0; j < curr.pathPoints.length - 1; j++) {
-          const a = new TimelinePoint(curr.pathPoints[j].lat, curr.pathPoints[j].lon, timestamp);
-          const b = new TimelinePoint(curr.pathPoints[j + 1].lat, curr.pathPoints[j + 1].lon, timestamp);
-          paths.push(new TimelinePath(a, b));
+        const pathPoints: TimelinePoint[] = [];
+        for (let j = 0; j < curr.pathPoints.length; j++) {
+          pathPoints.push({ lat: curr.pathPoints[j].lat, lon: curr.pathPoints[j].lon, timestamp });
+        }
+        if (pathPoints.length > 1) {
+          paths.push({ points: pathPoints });
         }
       } else {
         // Add start and end points
         if (curr.startLoc) {
-          points.push(new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp));
+          points.push({ lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp });
         }
 
         if (curr.endLoc && curr.startLoc) {
@@ -132,32 +146,38 @@ export class IOSTimelineParser implements ITimelineParser {
             Math.pow(curr.endLoc.lon - curr.startLoc.lon, 2)
           );
           if (distance > 0.0001) { // Roughly 11 meters
-            const endTime = curr.endTime ? new Date(curr.endTime) : timestamp;
-            points.push(new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, endTime));
+            const endTime = curr.endTime ? new Date(curr.endTime).getTime() : timestamp;
+            points.push({ lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTime });
           }
         }
 
         // Create path if this is a movement
         if (curr.isPath && curr.startLoc && curr.endLoc) {
-          const a = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
-          const b = new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, curr.endTime ? new Date(curr.endTime) : timestamp);
-          paths.push(new TimelinePath(a, b));
+          paths.push({
+            points: [
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp },
+              { lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: curr.endTime ? new Date(curr.endTime).getTime() : timestamp }
+            ]
+          });
         }
       }
 
       // Connect to previous entry
       if (i > 0) {
         const prev = entries[i - 1];
-        const prevEndTime = prev.endTime ? new Date(prev.endTime) : new Date();
+        const prevEndTime = prev.endTime ? new Date(prev.endTime).getTime() : new Date().getTime();
         if (prev.endLoc && curr.startLoc) {
-          const a = new TimelinePoint(prev.endLoc.lat, prev.endLoc.lon, prevEndTime);
-          const b = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
-          paths.push(new TimelinePath(a, b));
+          paths.push({
+            points: [
+              { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp }
+            ]
+          });
         }
       }
     }
 
-    return new TimelineGroup(points, paths);
+    return { points, paths };
   }
 }
 
@@ -166,10 +186,16 @@ export class IOSTimelineParser implements ITimelineParser {
  */
 export class AndroidTimelineParser implements ITimelineParser {
   canParse(data: any): boolean {
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch { return false; }
+    }
     return data && typeof data === 'object' && Array.isArray(data.semanticSegments);
   }
 
   parse(data: any): TimelineGroup {
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
     const entries = data.semanticSegments
       .map((entry: any) => this.parseEntry(entry))
       .filter((e: TimelineEntry | null): e is TimelineEntry => e !== null)
@@ -227,7 +253,7 @@ export class AndroidTimelineParser implements ITimelineParser {
     if (parts.length !== 2) return null;
     
     try {
-      return new LocationPoint(parseFloat(parts[0]), parseFloat(parts[1]));
+      return { lat: parseFloat(parts[0]), lon: parseFloat(parts[1]) };
     } catch {
       return null;
     }
@@ -239,25 +265,27 @@ export class AndroidTimelineParser implements ITimelineParser {
 
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
-      const timestamp = curr.startTime ? new Date(curr.startTime) : new Date();
+      const timestamp = curr.startTime ? new Date(curr.startTime).getTime() : new Date().getTime();
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
         // Add all points from the path
         for (const loc of curr.pathPoints) {
-          points.push(new TimelinePoint(loc.lat, loc.lon, timestamp));
+          points.push({ lat: loc.lat, lon: loc.lon, timestamp });
         }
         
         // Create paths between consecutive points in the path
-        for (let j = 0; j < curr.pathPoints.length - 1; j++) {
-          const a = new TimelinePoint(curr.pathPoints[j].lat, curr.pathPoints[j].lon, timestamp);
-          const b = new TimelinePoint(curr.pathPoints[j + 1].lat, curr.pathPoints[j + 1].lon, timestamp);
-          paths.push(new TimelinePath(a, b));
+        const pathPoints: TimelinePoint[] = [];
+        for (let j = 0; j < curr.pathPoints.length; j++) {
+          pathPoints.push({ lat: curr.pathPoints[j].lat, lon: curr.pathPoints[j].lon, timestamp });
+        }
+        if (pathPoints.length > 1) {
+          paths.push({ points: pathPoints });
         }
       } else {
         // Add start and end points
         if (curr.startLoc) {
-          points.push(new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp));
+          points.push({ lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp });
         }
 
         if (curr.endLoc && curr.startLoc) {
@@ -266,45 +294,58 @@ export class AndroidTimelineParser implements ITimelineParser {
             Math.pow(curr.endLoc.lon - curr.startLoc.lon, 2)
           );
           if (distance > 0.0001) { // Roughly 11 meters
-            const endTime = curr.endTime ? new Date(curr.endTime) : timestamp;
-            points.push(new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, endTime));
+            const endTime = curr.endTime ? new Date(curr.endTime).getTime() : timestamp;
+            points.push({ lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTime });
           }
         }
 
         // Create path if this is a movement
         if (curr.isPath && curr.startLoc && curr.endLoc) {
-          const a = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
-          const b = new TimelinePoint(curr.endLoc.lat, curr.endLoc.lon, curr.endTime ? new Date(curr.endTime) : timestamp);
-          paths.push(new TimelinePath(a, b));
+          paths.push({
+            points: [
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp },
+              { lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: curr.endTime ? new Date(curr.endTime).getTime() : timestamp }
+            ]
+          });
         }
       }
 
       // Connect to previous entry
       if (i > 0) {
         const prev = entries[i - 1];
-        const prevEndTime = prev.endTime ? new Date(prev.endTime) : new Date();
+        const prevEndTime = prev.endTime ? new Date(prev.endTime).getTime() : new Date().getTime();
         if (prev.endLoc && curr.startLoc) {
-          const a = new TimelinePoint(prev.endLoc.lat, prev.endLoc.lon, prevEndTime);
-          const b = new TimelinePoint(curr.startLoc.lat, curr.startLoc.lon, timestamp);
-          paths.push(new TimelinePath(a, b));
+          paths.push({
+            points: [
+              { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp }
+            ]
+          });
         }
       }
     }
 
-    return new TimelineGroup(points, paths);
+    return { points, paths };
   }
 }
 
 /**
  * Factory for creating appropriate parser
  */
-export class TimelineParserFactory {
+export class TimelineParserFactory implements ParserPort {
   private static parsers: ITimelineParser[] = [
     new IOSTimelineParser(),
     new AndroidTimelineParser(),
   ];
 
+  parse(data: any): TimelineGroup {
+    return TimelineParserFactory.parse(data);
+  }
+
   static parse(data: any): TimelineGroup {
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch { /* ignore */ }
+    }
     for (const parser of this.parsers) {
       if (parser.canParse(data)) {
         return parser.parse(data);
@@ -312,10 +353,13 @@ export class TimelineParserFactory {
     }
     
     console.warn('Unknown timeline format');
-    return new TimelineGroup([], []);
+    return { points: [], paths: [] };
   }
 
   static detectFormat(data: any): TimelineFormat {
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data); } catch { /* ignore */ }
+    }
     if (new IOSTimelineParser().canParse(data)) return 'ios';
     if (new AndroidTimelineParser().canParse(data)) return 'android';
     return 'unknown';

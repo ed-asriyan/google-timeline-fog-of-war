@@ -2,8 +2,8 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import L from 'leaflet';
-import { TimelinePoint, TimelinePath, LocationPoint } from '../../domains/map';
-import { FogSettings } from '../../domains/settings';
+import { TimelinePoint, TimelinePath, LocationPoint } from '../../domains/map/ports';
+import { FogSettings } from '../../infrastructure/repositories/UISettingsRepository';
 
 export interface MapBoundsRect {
   minLat: number;
@@ -112,7 +112,7 @@ export function useMap(
     const metersPerPixel =
       (40075016.686 * Math.abs(Math.cos((center.lat * Math.PI) / 180))) /
       Math.pow(2, map.getZoom() + 8);
-    const pixelRadius = (settings.getRadius() * 1000) / metersPerPixel;
+    const pixelRadius = (settings.radius * 1000) / metersPerPixel;
 
     if (pixelRadius < 0.5) {
       ctx.globalCompositeOperation = 'source-over';
@@ -120,26 +120,29 @@ export function useMap(
     }
 
     // Draw roads (data is pre-filtered by grid query)
-    if (settings.getConnectPaths()) {
+    if (settings.connectPaths) {
       ctx.beginPath();
       ctx.lineWidth = pixelRadius * 2;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      for (const segment of segments) {
-        const lengthKm = segment.length;
-        if (lengthKm > settings.getPathLengthKm()) continue;
+        for (const segment of segments) {
+          // The new TimelinePath format provides a list of points
+          if (segment.points.length < 2) continue;
+          
+          // Note: Here we could manually calculate the total distance of all segments
+          // if we still want to filter by path length
+          
+          ctx.beginPath();
+          const startPt = map.latLngToContainerPoint([segment.points[0].lat, segment.points[0].lon]);
+          ctx.moveTo(startPt.x, startPt.y);
 
-        const start = segment.a;
-        const end = segment.b;
-
-        const p1 = map.latLngToContainerPoint([start.lat, start.lon]);
-        const p2 = map.latLngToContainerPoint([end.lat, end.lon]);
-
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-      }
-      ctx.stroke();
+          for (let i = 1; i < segment.points.length; i++) {
+            const p = map.latLngToContainerPoint([segment.points[i].lat, segment.points[i].lon]);
+            ctx.lineTo(p.x, p.y);
+          }
+          ctx.stroke();
+        }
     }
 
     // Draw points (data is pre-filtered by grid query)

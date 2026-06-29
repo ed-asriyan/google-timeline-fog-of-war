@@ -1,37 +1,19 @@
 // Presentation Layer: Map viewport state management hook
 
 import { useState, useCallback, useMemo } from 'react';
-import { MapViewport } from '../../domains/settings';
-import { SettingsApplication } from '../../application/Settings';
-import { LocalStorageSettingsRepository } from '../../infrastructure/repositories/LocalStorageSettingsRepository';
-
-interface ViewportState {
-  lat: number;
-  lng: number;
-  zoom: number;
-}
+import { UISettingsRepository, MapViewport } from '../../infrastructure/repositories/UISettingsRepository';
 
 export function useMapViewport() {
-  const service = useMemo(() => new SettingsApplication(new LocalStorageSettingsRepository()), []);
+  const repo = useMemo(() => new UISettingsRepository(), []);
   
-  // Load initial viewport from service
-  const [viewport, setViewport] = useState<ViewportState>(() => {
-    const saved = service.loadViewport();
-    return {
-      lat: saved.getLat(),
-      lng: saved.getLng(),
-      zoom: saved.getZoom()
-    };
-  });
+  // Load initial viewport from repository
+  const [viewport, setViewport] = useState<MapViewport>(() => repo.loadViewport());
 
   const updateViewport = useCallback((lat: number, lng: number, zoom: number) => {
     const newViewport = { lat, lng, zoom };
     setViewport(newViewport);
-    
-    // Save through service with domain validation
-    const viewportVO = MapViewport.create(lat, lng, zoom);
-    service.updateViewport(viewportVO);
-  }, [service]);
+    repo.saveViewport(newViewport);
+  }, [repo]);
 
   return {
     viewport,

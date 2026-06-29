@@ -1,54 +1,39 @@
 // Presentation Layer: Custom hooks for timeline files
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { LoadingState, TimelineFileService } from '../../application/Map';
+import { useState, useCallback, useEffect } from 'react';
+import { MapApp, MapSegmentRepository } from '../../domains/map/ports';
 import { analytics } from '../../infrastructure/analytics';
 
-export function useTimelineFiles(service: TimelineFileService) {
+export type LoadingState = {
+  status: 'idle' | 'reading' | 'parsing' | 'saving';
+  progress?: number;
+};
+
+export function useTimelineFiles(mapApp: MapApp, mapSegmentRepo: MapSegmentRepository) {
   const [dataVersion, setDataVersion] = useState(0);
   const [hasData, setHasData] = useState(false);
-  const [loadingState, setLoadingState] = useState<LoadingState>(() => service.getCurrentLoadingState());
-  const pollRef = useRef<number | null>(null);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current !== null) {
-      window.clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
-
-  const syncLoadingState = useCallback(() => {
-    const nextState = service.getCurrentLoadingState();
-    setLoadingState(nextState);
-    if (nextState.status === 'idle') {
-      stopPolling();
-    }
-    return nextState;
-  }, [service, stopPolling]);
-
-  const startPolling = useCallback(() => {
-    syncLoadingState();
-    if (pollRef.current !== null) {
-      return;
-    }
-    pollRef.current = window.setInterval(() => {
-      syncLoadingState();
-    }, 1000);
-  }, [syncLoadingState]);
+  const [loadingState, setLoadingState] = useState<LoadingState>({ status: 'idle' });
 
   // Check on mount whether IndexedDB already has data
   useEffect(() => {
-    service.hasData().then(setHasData).catch(() => setHasData(false));
-  }, [service]);
-
-  useEffect(() => stopPolling, [stopPolling]);
+    mapSegmentRepo.hasData().then(setHasData).catch(() => setHasData(false));
+  }, [mapSegmentRepo]);
 
   // Upload files one at a time
   const uploadFiles = useCallback(async (fileList: File[]) => {
-    startPolling();
+    setLoadingState({ status: 'reading', progress: 0 });
     try {
-      await service.addFiles(...fileList);
-      syncLoadingState();
+      let filesProcessed = 0;
+      for (const file of fileList) {
+        setLoadingState({ status: 'reading', progress: (filesProcessed / fileList.length) * 100 });
+        const text = await file.text();
+        
+        setLoadingState({ status: 'parsing', progress: ((filesProcessed + 0.5) / fileList.length) * 100 });
+        await mapApp.loadPoints(text);
+
+        filesProcessed++;
+      }
+      
       setDataVersion(v => v + 1);
       setHasData(true);
       analytics.track('Files Processed', { fileCount: fileList.length });
@@ -56,20 +41,20 @@ export function useTimelineFiles(service: TimelineFileService) {
       console.error('Failed to upload files:', error);
       analytics.track('File Processing Failed', { fileCount: fileList.length });
     } finally {
-      syncLoadingState();
+      setLoadingState({ status: 'idle' });
     }
-  }, [service, startPolling, syncLoadingState]);
+  }, [mapApp]);
 
   // Clear all imported data
   const clearAll = useCallback(async () => {
     try {
-      await service.clearAll();
+      await mapApp.clear();
       setDataVersion(v => v + 1);
       setHasData(false);
     } catch (error) {
       console.error('Failed to clear all data:', error);
     }
-  }, [service]);
+  }, [mapApp]);
 
   return {
     dataVersion,

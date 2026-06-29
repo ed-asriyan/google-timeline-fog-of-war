@@ -2,11 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Menu } from 'lucide-react';
-import { TimelineFileService } from './application/Map';
-import { SettingsApplication } from './application/Settings';
-import { MapBounds, LocationPoint } from './domains/map/value-objects';
-import { TimelinePoint } from './domains/map/TimelinePoint';
-import { TimelinePath } from './domains/map/TimelinePath';
 import { useTimelineFiles } from './presentation/hooks/useTimelineFiles';
 import { useFogSettings } from './presentation/hooks/useFogSettings';
 import { useMapViewport } from './presentation/hooks/useMapViewport';
@@ -14,7 +9,8 @@ import { useMap, MapBoundsRect } from './presentation/hooks/useMap';
 import { SidePanel } from './presentation/components/SidePanel';
 import { AddressSearch } from './presentation/components/AddressSearch';
 import { getSharedFiles } from './utils/share-target';
-import './index.css';
+import { Map } from './domains/map/app';
+import { MapSegmentRepository } from './domains/map/ports';
 
 const styles = `
   .leaflet-container {
@@ -39,11 +35,11 @@ const styles = `
 `;
 
 interface AppProps {
-  timelineFileService: TimelineFileService;
-  settingsService: SettingsApplication;
+  mapApp: Map;
+  mapSegmentRepository: MapSegmentRepository;
 }
 
-export default function App({ timelineFileService, settingsService }: AppProps) {
+export default function App({ mapApp, mapSegmentRepository }: AppProps) {
   // State management through custom hooks
   const {
     dataVersion,
@@ -52,7 +48,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     loadingState,
     uploadFiles,
     clearAll,
-  } = useTimelineFiles(timelineFileService);
+  } = useTimelineFiles(mapApp, mapSegmentRepository);
 
   // Error state
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +60,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     updateRadius,
     toggleConnectPaths,
     updatePathLength,
-  } = useFogSettings(settingsService);
+  } = useFogSettings();
 
   const { viewport, updateViewport } = useMapViewport();
 
@@ -81,23 +77,25 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
       try {
         // Add a small padding (radius) beyond visible area so fog circles near
         // the edge are fully rendered
-        const padDeg = settings.getRadius() / 111;
+        const padDeg = settings.radius / 111;
 
-        const bounds = new MapBounds(
-          new LocationPoint(
-            Math.max(-90, mapBounds.minLat - padDeg),
-            Math.max(-180, mapBounds.minLon - padDeg)
-          ),
-          new LocationPoint(
-            Math.min(90, mapBounds.maxLat + padDeg),
-            Math.min(180, mapBounds.maxLon + padDeg)
-          )
-        );
+        const bounds = {
+          a: {
+            lat: Math.max(-90, mapBounds.minLat - padDeg),
+            lon: Math.max(-180, mapBounds.minLon - padDeg)
+          },
+          b: {
+            lat: Math.min(90, mapBounds.maxLat + padDeg),
+            lon: Math.min(180, mapBounds.maxLon + padDeg)
+          }
+        };
 
-        const result = await timelineFileService.queryViewport(bounds);
+        const resultPoints = await mapApp.getPoints(bounds);
+        const resultPaths = await mapApp.getPaths(bounds);
+        
         if (!cancelled) {
-          setPoints(Array.from(result.points));
-          setSegments(Array.from(result.paths));
+          setPoints(resultPoints);
+          setSegments(resultPaths);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -107,7 +105,7 @@ export default function App({ timelineFileService, settingsService }: AppProps) 
     };
     query();
     return () => { cancelled = true; };
-  }, [timelineFileService, dataVersion, mapBounds, settings]);
+  }, [mapApp, dataVersion, mapBounds, settings]);
 
   // Map management
   const { mapContainerRef, canvasRef, flyToLocation } = useMap(

@@ -1,11 +1,11 @@
 // Presentation Layer: Custom hook for fog settings
 
-import { useState, useCallback, useEffect } from 'react';
-import { FogSettings } from '../../domains/settings';
-import { SettingsApplication } from '../../application/Settings';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { UISettingsRepository, FogSettings, DEFAULT_FOG_SETTINGS } from '../../infrastructure/repositories/UISettingsRepository';
 
-export function useFogSettings(service: SettingsApplication) {
-  const [settings, setSettings] = useState<FogSettings>(() => service.loadSettings());
+export function useFogSettings() {
+  const repo = useMemo(() => new UISettingsRepository(), []);
+  const [settings, setSettings] = useState<FogSettings>(() => repo.loadFogSettings());
 
   // Responsive panel state
   const [isPanelOpen, setIsPanelOpen] = useState(() => window.innerWidth >= 768);
@@ -20,25 +20,26 @@ export function useFogSettings(service: SettingsApplication) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const updateRadius = useCallback((radiusKm: number) => {
-    const newSettings = service.updateRadius(radiusKm);
+  const updateSettings = useCallback((newSettings: FogSettings) => {
     setSettings(newSettings);
-  }, [service]);
+    repo.saveFogSettings(newSettings);
+  }, [repo]);
+
+  const updateRadius = useCallback((radiusKm: number) => {
+    updateSettings({ ...settings, radius: radiusKm });
+  }, [settings, updateSettings]);
 
   const toggleConnectPaths = useCallback(() => {
-    const newSettings = service.toggleConnectPaths();
-    setSettings(newSettings);
-  }, [service]);
+    updateSettings({ ...settings, connectPaths: !settings.connectPaths });
+  }, [settings, updateSettings]);
 
   const updatePathLength = useCallback((pathLengthKm: number) => {
-    const newSettings = service.updatePathLength(pathLengthKm);
-    setSettings(newSettings);
-  }, [service]);
+    updateSettings({ ...settings, pathLengthKm });
+  }, [settings, updateSettings]);
 
   const resetToDefaults = useCallback(() => {
-    const newSettings = service.resetToDefaults();
-    setSettings(newSettings);
-  }, [service]);
+    updateSettings(DEFAULT_FOG_SETTINGS);
+  }, [updateSettings]);
 
   return {
     settings,

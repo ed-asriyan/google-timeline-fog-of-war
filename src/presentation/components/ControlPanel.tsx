@@ -1,8 +1,8 @@
 // Presentation Layer: Control Panel Component
 
-
+import { useState, useEffect } from 'react';
 import { Settings, Route } from 'lucide-react';
-import { FogSettings } from '../../domains/settings';
+import { FogSettings } from '../../infrastructure/repositories/UISettingsRepository';
 import { analytics } from '../../infrastructure/analytics';
 
 interface ControlPanelProps {
@@ -18,6 +18,17 @@ export function ControlPanel({
   onToggleRoads,
   onMaxLinkDistanceChange,
 }: ControlPanelProps) {
+  const [localRadius, setLocalRadius] = useState(settings.radius);
+  const [localPathLength, setLocalPathLength] = useState(settings.pathLengthKm);
+
+  useEffect(() => {
+    setLocalRadius(settings.radius);
+  }, [settings.radius]);
+
+  useEffect(() => {
+    setLocalPathLength(settings.pathLengthKm);
+  }, [settings.pathLengthKm]);
+
   return (
     <div className="p-4 space-y-5">
       {/* Radius Slider */}
@@ -30,7 +41,7 @@ export function ControlPanel({
             <Settings className="w-3 h-3" /> Visibility Radius
           </label>
           <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-0.5 rounded">
-            {Math.round(settings.getRadius() * 1000)} m
+            {Math.round(localRadius * 1000)} m
           </span>
         </div>
         <input
@@ -38,15 +49,25 @@ export function ControlPanel({
           min="0"
           max="1000"
           step="10"
-          value={settings.getRadius() * 1000}
+          value={localRadius * 1000}
           onChange={(e) => {
             const newRadius = parseFloat(e.target.value) / 1000;
-            onRadiusChange(newRadius);
+            setLocalRadius(newRadius);
           }}
           onMouseUp={(e) => {
             const target = e.target as HTMLInputElement;
+            const newRadius = parseFloat(target.value) / 1000;
+            onRadiusChange(newRadius);
             analytics.track('Visibility Radius Changed', {
-              radiusMeters: Math.round(parseFloat(target.value)),
+              radiusMeters: Math.round(newRadius * 1000),
+            });
+          }}
+          onTouchEnd={(e) => {
+            const target = e.target as HTMLInputElement;
+            const newRadius = parseFloat(target.value) / 1000;
+            onRadiusChange(newRadius);
+            analytics.track('Visibility Radius Changed', {
+              radiusMeters: Math.round(newRadius * 1000),
             });
           }}
           className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
@@ -60,40 +81,40 @@ export function ControlPanel({
           className="flex items-center justify-between cursor-pointer group select-none"
           onClick={() => {
             analytics.track('Connect Dots Toggled', {
-              enabled: !settings.getConnectPaths(),
+              enabled: !settings.connectPaths,
             });
             onToggleRoads();
           }}
         >
           <div className="flex items-center gap-2">
             <Route
-              className={`w-4 h-4 ${settings.getConnectPaths() ? 'text-blue-600' : 'text-gray-400'}`}
+              className={`w-4 h-4 ${settings.connectPaths ? 'text-blue-600' : 'text-gray-400'}`}
             />
             <span className="text-sm font-medium text-gray-700">Connect Dots</span>
           </div>
           <div
             className={`w-8 h-4 rounded-full relative transition-colors ${
-              settings.getConnectPaths() ? 'bg-blue-600' : 'bg-gray-300'
+              settings.connectPaths ? 'bg-blue-600' : 'bg-gray-300'
             }`}
           >
             <div
               className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all shadow-sm`}
               style={{
-                transform: settings.getConnectPaths() ? 'translateX(1.125rem)' : 'translateX(0.125rem)',
+                transform: settings.connectPaths ? 'translateX(1.125rem)' : 'translateX(0.125rem)',
               }}
             />
           </div>
         </div>
 
         {/* Path Length Slider (Conditional) */}
-        {settings.getConnectPaths() && (
+        {settings.connectPaths && (
           <div className="space-y-2 animate-in slide-in-from-top-2 fade-in duration-200 pt-1">
             <div className="flex justify-between items-center">
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                 Max Link Distance
               </label>
               <span className="text-[10px] font-mono text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
-                {settings.getPathLengthKm()} km
+                {localPathLength} km
               </span>
             </div>
             <input
@@ -101,8 +122,10 @@ export function ControlPanel({
               min="0"
               max="100"
               step="1"
-              value={settings.getPathLengthKm()}
-              onChange={(e) => onMaxLinkDistanceChange(parseFloat(e.target.value))}
+              value={localPathLength}
+              onChange={(e) => setLocalPathLength(parseFloat(e.target.value))}
+              onMouseUp={(e) => onMaxLinkDistanceChange(parseFloat((e.target as HTMLInputElement).value))}
+              onTouchEnd={(e) => onMaxLinkDistanceChange(parseFloat((e.target as HTMLInputElement).value))}
               className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
             <p className="text-[10px] text-gray-400 leading-tight">

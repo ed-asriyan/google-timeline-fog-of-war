@@ -1,21 +1,37 @@
-// Infrastructure Layer: Settings repository
-
-import { SettingsRepository } from '@/domains/ports';
-import { FogSettings, MapViewport } from '@/domains/settings';
-
 const SETTINGS_KEY_PREFIX = 'fog_settings_';
 
-/**
- * Repository for fog settings and viewport using localStorage
- */
-export class LocalStorageSettingsRepository implements SettingsRepository {
+export interface FogSettings {
+  radius: number;
+  connectPaths: boolean;
+  pathLengthKm: number;
+}
+
+export interface MapViewport {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
+export const DEFAULT_FOG_SETTINGS: FogSettings = {
+  radius: 0.2,
+  connectPaths: false,
+  pathLengthKm: 3
+};
+
+export const DEFAULT_VIEWPORT: MapViewport = {
+  lat: 0,
+  lng: 0,
+  zoom: 2
+};
+
+export class UISettingsRepository {
   private getKey(key: string): string {
     return `${SETTINGS_KEY_PREFIX}${key}`;
   }
 
   saveFogSettings(settings: FogSettings): void {
     try {
-      localStorage.setItem(this.getKey('fog'), JSON.stringify(settings.toJson()));
+      localStorage.setItem(this.getKey('fog'), JSON.stringify(settings));
     } catch (error) {
       console.error('Failed to save settings:', error);
     }
@@ -25,17 +41,17 @@ export class LocalStorageSettingsRepository implements SettingsRepository {
     try {
       const saved = localStorage.getItem(this.getKey('fog'));
       if (saved) {
-        return FogSettings.fromJson(JSON.parse(saved));
+        return { ...DEFAULT_FOG_SETTINGS, ...JSON.parse(saved) };
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
-    return FogSettings.default();
+    return { ...DEFAULT_FOG_SETTINGS };
   }
 
   saveViewport(viewport: MapViewport): void {
     try {
-      localStorage.setItem(this.getKey('viewport'), JSON.stringify(viewport.toJson()));
+      localStorage.setItem(this.getKey('viewport'), JSON.stringify(viewport));
     } catch (error) {
       console.error('Failed to save viewport:', error);
     }
@@ -45,12 +61,12 @@ export class LocalStorageSettingsRepository implements SettingsRepository {
     try {
       const saved = localStorage.getItem(this.getKey('viewport'));
       if (saved) {
-        return MapViewport.fromJson(JSON.parse(saved));
+        return { ...DEFAULT_VIEWPORT, ...JSON.parse(saved) };
       }
     } catch (error) {
       console.error('Failed to load viewport:', error);
     }
-    return MapViewport.default();
+    return { ...DEFAULT_VIEWPORT };
   }
 
   clear(): void {

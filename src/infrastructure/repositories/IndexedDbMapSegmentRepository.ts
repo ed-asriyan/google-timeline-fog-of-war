@@ -1,7 +1,4 @@
-import { MapSegment } from "@/domains/map/MapSegment";
-import { TimelinePoint } from "@/domains/map/TimelinePoint";
-import { TimelinePath } from "@/domains/map/TimelinePath";
-import { MapSegmentRepository } from "@/domains/ports";
+import { MapSegmentRepository, MapSegment } from "../../domains/map/ports";
 
 export class IndexedDbMapSegmentRepository implements MapSegmentRepository {
     private static readonly dbName = 'TimelineMapDB';
@@ -17,8 +14,8 @@ export class IndexedDbMapSegmentRepository implements MapSegmentRepository {
     async saveSegment(segment: MapSegment): Promise<void> {
         const record = {
             id: segment.index,
-            points: segment.getPoints().map(p => p.toJson()),
-            paths: segment.getPaths().map(p => p.toJson()),
+            points: segment.group.points.map(p => ({ lat: p.lat, lon: p.lon, timestamp: p.timestamp })),
+            paths: segment.group.paths.map(p => ({ points: p.points.map(pt => ({ lat: pt.lat, lon: pt.lon, timestamp: pt.timestamp })) })),
         };
         return new Promise((resolve, reject) => {
             const tx = this.db.transaction(IndexedDbMapSegmentRepository.storeName, 'readwrite');
@@ -37,15 +34,16 @@ export class IndexedDbMapSegmentRepository implements MapSegmentRepository {
             req.onsuccess = () => {
                 const record = req.result;
                 if (!record) {
-                    resolve(new MapSegment(id));
+                    resolve({ index: id, group: { points: [], paths: [] } });
                     return;
                 }
-                const segment = new MapSegment(id);
-                const points: TimelinePoint[] = (record.points ?? []).map(TimelinePoint.fromJson);
-                const paths: TimelinePath[] = (record.paths ?? []).map(TimelinePath.fromJson);
-                segment.addPoints(...points);
-                segment.addPaths(...paths);
-                resolve(segment);
+                const points = record.points ?? [];
+                const paths = record.paths ?? [];
+                
+                resolve({ 
+                    index: id, 
+                    group: { points, paths } 
+                });
             };
             req.onerror = () => reject(req.error);
         });
