@@ -4,8 +4,8 @@
 import { Map as MapIcon, X, Trash2 } from 'lucide-react';
 import { ControlPanel } from './ControlPanel';
 import { FileUpload } from './FileUpload';
-import { FogSettings } from '../../domains/settings';
-import { LoadingState } from '../../application/Map';
+import { FogSettings } from '../../infrastructure/repositories/UISettingsRepository';
+import { LoadingState } from '../hooks/useTimelineFiles';
 
 interface SidePanelProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface SidePanelProps {
   onRadiusChange: (radius: number) => void;
   onToggleRoads: () => void;
   onMaxLinkDistanceChange: (distance: number) => void;
+  onMaxVelocityChange: (velocity: number) => void;
   isProcessing: boolean;
   loadingState: LoadingState;
   hasData: boolean;
@@ -28,6 +29,7 @@ export function SidePanel({
   onRadiusChange,
   onToggleRoads,
   onMaxLinkDistanceChange,
+  onMaxVelocityChange,
   isProcessing,
   loadingState,
   hasData,
@@ -73,6 +75,7 @@ export function SidePanel({
             onRadiusChange={onRadiusChange}
             onToggleRoads={onToggleRoads}
             onMaxLinkDistanceChange={onMaxLinkDistanceChange}
+            onMaxVelocityChange={onMaxVelocityChange}
           />
         </div>
 

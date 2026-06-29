@@ -35,6 +35,7 @@ export interface MapSegment {
 
 export interface Settings {
     maxPathDistanceKm: number;
+    maxPathVelocityKmh: number;
 }
 
 export interface MapApp {

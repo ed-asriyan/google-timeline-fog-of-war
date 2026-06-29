@@ -4,6 +4,7 @@ export interface FogSettings {
   radius: number;
   connectPaths: boolean;
   pathLengthKm: number;
+  pathVelocityKmh: number;
 }
 
 export interface MapViewport {
@@ -15,7 +16,8 @@ export interface MapViewport {
 export const DEFAULT_FOG_SETTINGS: FogSettings = {
   radius: 0.2,
   connectPaths: false,
-  pathLengthKm: 3
+  pathLengthKm: 3,
+  pathVelocityKmh: 1000
 };
 
 export const DEFAULT_VIEWPORT: MapViewport = {

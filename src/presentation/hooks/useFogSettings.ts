@@ -37,6 +37,10 @@ export function useFogSettings() {
     updateSettings({ ...settings, pathLengthKm });
   }, [settings, updateSettings]);
 
+  const updatePathVelocity = useCallback((pathVelocityKmh: number) => {
+    updateSettings({ ...settings, pathVelocityKmh });
+  }, [settings, updateSettings]);
+
   const resetToDefaults = useCallback(() => {
     updateSettings(DEFAULT_FOG_SETTINGS);
   }, [updateSettings]);
@@ -48,6 +52,7 @@ export function useFogSettings() {
     updateRadius,
     toggleConnectPaths,
     updatePathLength,
+    updatePathVelocity,
     resetToDefaults,
   };
 }

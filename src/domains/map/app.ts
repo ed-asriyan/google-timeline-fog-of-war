@@ -9,7 +9,7 @@ import {
   Settings,
   SettingsRepository,
 } from "./ports";
-import { calculatePathLengthKm } from './geometry';
+import { calculateDistance } from './geometry';
 import { getSegmentIdsForBound, getSegmentIdsForPath, getSegmentIdForPoints } from './grid';
 
 export class Map implements MapApp {
@@ -97,14 +97,38 @@ export class Map implements MapApp {
             
             if (!seenPaths.has(hash)) {
               seenPaths.add(hash);
-              const lengthKm = calculatePathLengthKm(path);
               
-              if (lengthKm > settings.maxPathDistanceKm) {
-                // Path exceeds max distance, add start and end as points
-                points.push(first, last);
+              let currentSubPath = [path.points[0]];
+              
+              for (let i = 1; i < path.points.length; i++) {
+                const prev = path.points[i - 1];
+                const curr = path.points[i];
+                
+                const linkLength = calculateDistance(prev, curr);
+                const durationHours = Math.abs(curr.timestamp - prev.timestamp) / 3600000;
+                let linkVelocity = 0;
+                if (durationHours > 0) {
+                  linkVelocity = linkLength / durationHours;
+                } else if (linkLength > 0.05) {
+                  linkVelocity = Infinity;
+                }
+
+                if (linkLength > settings.maxPathDistanceKm || linkVelocity > settings.maxPathVelocityKmh) {
+                  if (currentSubPath.length > 1) {
+                    paths.push({ points: currentSubPath });
+                  } else {
+                    points.push(currentSubPath[0]);
+                  }
+                  currentSubPath = [curr];
+                } else {
+                  currentSubPath.push(curr);
+                }
+              }
+
+              if (currentSubPath.length > 1) {
+                paths.push({ points: currentSubPath });
               } else {
-                // Path is valid, keep as path
-                paths.push(path);
+                points.push(currentSubPath[0]);
               }
             }
           }
@@ -117,7 +141,6 @@ export class Map implements MapApp {
 
   async getStatistics(bounds: Bounds): Promise<Statistics> {
     const segmentIds = getSegmentIdsForBound(bounds);
-    const settings = await this.settings.loadSettings();
     let totalPoints = 0;
     let totalPaths = 0;
 
@@ -138,12 +161,7 @@ export class Map implements MapApp {
             
             if (!seenPaths.has(hash)) {
               seenPaths.add(hash);
-              const lengthKm = calculatePathLengthKm(path);
-              if (lengthKm > settings.maxPathDistanceKm) {
-                totalPoints += 2;
-              } else {
-                totalPaths += 1;
-              }
+              totalPaths += 1;
             }
           }
         }

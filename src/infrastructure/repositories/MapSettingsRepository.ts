@@ -3,6 +3,7 @@ import { Settings } from '@/domains/map/ports';
 
 const SETTINGS_KEY = 'fog_settings_fog';
 const DEFAULT_PATH_LENGTH_KM = 3;
+const DEFAULT_PATH_VELOCITY_KMH = 1000;
 
 export class MapSettingsRepository implements SettingsRepository {
   async saveSettings(settings: Settings): Promise<void> {
@@ -10,6 +11,7 @@ export class MapSettingsRepository implements SettingsRepository {
       const saved = localStorage.getItem(SETTINGS_KEY);
       const parsed = saved ? JSON.parse(saved) : {};
       parsed.pathLengthKm = settings.maxPathDistanceKm;
+      parsed.pathVelocityKmh = settings.maxPathVelocityKmh;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(parsed));
     } catch (error) {
       console.error('Failed to save map settings:', error);
@@ -21,13 +23,17 @@ export class MapSettingsRepository implements SettingsRepository {
       const saved = localStorage.getItem(SETTINGS_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.pathLengthKm === 'number') {
-          return { maxPathDistanceKm: parsed.pathLengthKm };
-        }
+        return { 
+          maxPathDistanceKm: typeof parsed.pathLengthKm === 'number' ? parsed.pathLengthKm : DEFAULT_PATH_LENGTH_KM,
+          maxPathVelocityKmh: typeof parsed.pathVelocityKmh === 'number' ? parsed.pathVelocityKmh : DEFAULT_PATH_VELOCITY_KMH
+        };
       }
     } catch (error) {
       console.error('Failed to load map settings:', error);
     }
-    return { maxPathDistanceKm: DEFAULT_PATH_LENGTH_KM };
+    return { 
+      maxPathDistanceKm: DEFAULT_PATH_LENGTH_KM,
+      maxPathVelocityKmh: DEFAULT_PATH_VELOCITY_KMH
+    };
   }
 }

@@ -21,3 +21,13 @@ export function calculatePathLengthKm(path: TimelinePath): number {
   }
   return length;
 }
+
+export function calculatePathVelocityKmh(path: TimelinePath, lengthKm: number): number {
+  if (path.points.length < 2) return 0;
+  const first = path.points[0];
+  const last = path.points[path.points.length - 1];
+  const durationMs = last.timestamp - first.timestamp;
+  if (durationMs <= 0) return Infinity; // or 0 if length is 0, but let's say Infinity
+  const durationHours = durationMs / (1000 * 60 * 60);
+  return lengthKm / durationHours;
+}

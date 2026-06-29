@@ -60,6 +60,7 @@ export default function App({ mapApp, mapSegmentRepository }: AppProps) {
     updateRadius,
     toggleConnectPaths,
     updatePathLength,
+    updatePathVelocity,
   } = useFogSettings();
 
   const { viewport, updateViewport } = useMapViewport();
@@ -158,6 +159,7 @@ export default function App({ mapApp, mapSegmentRepository }: AppProps) {
         onRadiusChange={updateRadius}
         onToggleRoads={toggleConnectPaths}
         onMaxLinkDistanceChange={updatePathLength}
+        onMaxVelocityChange={updatePathVelocity}
         isProcessing={isProcessing}
         loadingState={loadingState}
         hasData={hasData}

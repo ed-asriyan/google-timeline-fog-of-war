@@ -117,19 +117,23 @@ export class IOSTimelineParser implements ITimelineParser {
 
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
-      const timestamp = curr.startTime ? new Date(curr.startTime).getTime() : new Date().getTime();
+      const startTimestamp = curr.startTime ? new Date(curr.startTime).getTime() : new Date().getTime();
+      const endTimestamp = curr.endTime ? new Date(curr.endTime).getTime() : startTimestamp;
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
-        // Add all points from the path
-        for (const loc of curr.pathPoints) {
-          points.push({ lat: loc.lat, lon: loc.lon, timestamp });
-        }
-        
         // Create paths between consecutive points in the path
         const pathPoints: TimelinePoint[] = [];
-        for (let j = 0; j < curr.pathPoints.length; j++) {
-          pathPoints.push({ lat: curr.pathPoints[j].lat, lon: curr.pathPoints[j].lon, timestamp });
+        const ptsLen = curr.pathPoints.length;
+        
+        for (let j = 0; j < ptsLen; j++) {
+          const loc = curr.pathPoints[j];
+          // Interpolate timestamp
+          const fraction = ptsLen > 1 ? j / (ptsLen - 1) : 0;
+          const pointTimestamp = startTimestamp + (endTimestamp - startTimestamp) * fraction;
+          
+          points.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
+          pathPoints.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
         }
         if (pathPoints.length > 1) {
           paths.push({ points: pathPoints });
@@ -137,7 +141,7 @@ export class IOSTimelineParser implements ITimelineParser {
       } else {
         // Add start and end points
         if (curr.startLoc) {
-          points.push({ lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp });
+          points.push({ lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp });
         }
 
         if (curr.endLoc && curr.startLoc) {
@@ -146,8 +150,7 @@ export class IOSTimelineParser implements ITimelineParser {
             Math.pow(curr.endLoc.lon - curr.startLoc.lon, 2)
           );
           if (distance > 0.0001) { // Roughly 11 meters
-            const endTime = curr.endTime ? new Date(curr.endTime).getTime() : timestamp;
-            points.push({ lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTime });
+            points.push({ lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTimestamp });
           }
         }
 
@@ -155,8 +158,8 @@ export class IOSTimelineParser implements ITimelineParser {
         if (curr.isPath && curr.startLoc && curr.endLoc) {
           paths.push({
             points: [
-              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp },
-              { lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: curr.endTime ? new Date(curr.endTime).getTime() : timestamp }
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp },
+              { lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTimestamp }
             ]
           });
         }
@@ -170,7 +173,7 @@ export class IOSTimelineParser implements ITimelineParser {
           paths.push({
             points: [
               { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
-              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp }
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp }
             ]
           });
         }
@@ -265,19 +268,23 @@ export class AndroidTimelineParser implements ITimelineParser {
 
     for (let i = 0; i < entries.length; i++) {
       const curr = entries[i];
-      const timestamp = curr.startTime ? new Date(curr.startTime).getTime() : new Date().getTime();
+      const startTimestamp = curr.startTime ? new Date(curr.startTime).getTime() : new Date().getTime();
+      const endTimestamp = curr.endTime ? new Date(curr.endTime).getTime() : startTimestamp;
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
-        // Add all points from the path
-        for (const loc of curr.pathPoints) {
-          points.push({ lat: loc.lat, lon: loc.lon, timestamp });
-        }
-        
         // Create paths between consecutive points in the path
         const pathPoints: TimelinePoint[] = [];
-        for (let j = 0; j < curr.pathPoints.length; j++) {
-          pathPoints.push({ lat: curr.pathPoints[j].lat, lon: curr.pathPoints[j].lon, timestamp });
+        const ptsLen = curr.pathPoints.length;
+        
+        for (let j = 0; j < ptsLen; j++) {
+          const loc = curr.pathPoints[j];
+          // Interpolate timestamp
+          const fraction = ptsLen > 1 ? j / (ptsLen - 1) : 0;
+          const pointTimestamp = startTimestamp + (endTimestamp - startTimestamp) * fraction;
+          
+          points.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
+          pathPoints.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
         }
         if (pathPoints.length > 1) {
           paths.push({ points: pathPoints });
@@ -285,7 +292,7 @@ export class AndroidTimelineParser implements ITimelineParser {
       } else {
         // Add start and end points
         if (curr.startLoc) {
-          points.push({ lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp });
+          points.push({ lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp });
         }
 
         if (curr.endLoc && curr.startLoc) {
@@ -294,8 +301,7 @@ export class AndroidTimelineParser implements ITimelineParser {
             Math.pow(curr.endLoc.lon - curr.startLoc.lon, 2)
           );
           if (distance > 0.0001) { // Roughly 11 meters
-            const endTime = curr.endTime ? new Date(curr.endTime).getTime() : timestamp;
-            points.push({ lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTime });
+            points.push({ lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTimestamp });
           }
         }
 
@@ -303,8 +309,8 @@ export class AndroidTimelineParser implements ITimelineParser {
         if (curr.isPath && curr.startLoc && curr.endLoc) {
           paths.push({
             points: [
-              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp },
-              { lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: curr.endTime ? new Date(curr.endTime).getTime() : timestamp }
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp },
+              { lat: curr.endLoc.lat, lon: curr.endLoc.lon, timestamp: endTimestamp }
             ]
           });
         }
@@ -318,7 +324,7 @@ export class AndroidTimelineParser implements ITimelineParser {
           paths.push({
             points: [
               { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
-              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp }
+              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp }
             ]
           });
         }

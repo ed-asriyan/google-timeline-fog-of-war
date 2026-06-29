@@ -10,6 +10,7 @@ interface ControlPanelProps {
   onRadiusChange: (radius: number) => void;
   onToggleRoads: () => void;
   onMaxLinkDistanceChange: (distance: number) => void;
+  onMaxVelocityChange: (velocity: number) => void;
 }
 
 export function ControlPanel({
@@ -17,9 +18,11 @@ export function ControlPanel({
   onRadiusChange,
   onToggleRoads,
   onMaxLinkDistanceChange,
+  onMaxVelocityChange,
 }: ControlPanelProps) {
   const [localRadius, setLocalRadius] = useState(settings.radius);
   const [localPathLength, setLocalPathLength] = useState(settings.pathLengthKm);
+  const [localPathVelocity, setLocalPathVelocity] = useState(settings.pathVelocityKmh);
 
   useEffect(() => {
     setLocalRadius(settings.radius);
@@ -28,6 +31,10 @@ export function ControlPanel({
   useEffect(() => {
     setLocalPathLength(settings.pathLengthKm);
   }, [settings.pathLengthKm]);
+
+  useEffect(() => {
+    setLocalPathVelocity(settings.pathVelocityKmh);
+  }, [settings.pathVelocityKmh]);
 
   return (
     <div className="p-4 space-y-5">
@@ -108,28 +115,67 @@ export function ControlPanel({
 
         {/* Path Length Slider (Conditional) */}
         {settings.connectPaths && (
-          <div className="space-y-2 animate-in slide-in-from-top-2 fade-in duration-200 pt-1">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                Max Link Distance
-              </label>
-              <span className="text-[10px] font-mono text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
-                {localPathLength} km
-              </span>
+          <div className="space-y-4 animate-in slide-in-from-top-2 fade-in duration-200 pt-1">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Max Link Distance
+                </label>
+                <span className="text-[10px] font-mono text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
+                  {localPathLength} km
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                value={localPathLength}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setLocalPathLength(val);
+                }}
+                onMouseUp={(e) => {
+                  onMaxLinkDistanceChange(parseFloat((e.target as HTMLInputElement).value));
+                }}
+                onTouchEnd={(e) => {
+                  onMaxLinkDistanceChange(parseFloat((e.target as HTMLInputElement).value));
+                }}
+                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
             </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value={localPathLength}
-              onChange={(e) => setLocalPathLength(parseFloat(e.target.value))}
-              onMouseUp={(e) => onMaxLinkDistanceChange(parseFloat((e.target as HTMLInputElement).value))}
-              onTouchEnd={(e) => onMaxLinkDistanceChange(parseFloat((e.target as HTMLInputElement).value))}
-              className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
+            
+            <div className="space-y-2">
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Max Link Velocity
+                </label>
+                <span className="text-[10px] font-mono text-gray-600 bg-white border border-gray-200 px-1.5 py-0.5 rounded">
+                  {localPathVelocity} km/h
+                </span>
+              </div>
+              <input
+                type="range"
+                min="10"
+                max="256"
+                step="10"
+                value={localPathVelocity}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setLocalPathVelocity(val);
+                }}
+                onMouseUp={(e) => {
+                  onMaxVelocityChange(parseFloat((e.target as HTMLInputElement).value));
+                }}
+                onTouchEnd={(e) => {
+                  onMaxVelocityChange(parseFloat((e.target as HTMLInputElement).value));
+                }}
+                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+            </div>
+
             <p className="text-[10px] text-gray-400 leading-tight">
-              Prevents drawing lines for flights or GPS jumps longer than this.
+              Prevents drawing lines for flights or GPS jumps exceeding these limits.
             </p>
           </div>
         )}
