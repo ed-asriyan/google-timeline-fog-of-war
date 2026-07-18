@@ -40,7 +40,7 @@ describe('Timeline Parser', () => {
 
     it('should extract points from iOS data', () => {
       const result = TimelineParserFactory.parse(iosData);
-      const points = result.getPoints();
+      const points = result.points;
       expect(points.length).toBeGreaterThan(0);
       expect(points[0]).toHaveProperty('lat');
       expect(points[0]).toHaveProperty('lon');
@@ -48,15 +48,14 @@ describe('Timeline Parser', () => {
 
     it('should extract segments from iOS activities', () => {
       const result = TimelineParserFactory.parse(iosData);
-      const paths = result.getPaths();
+      const paths = result.paths;
       expect(paths.length).toBeGreaterThan(0);
-      expect(paths[0]).toHaveProperty('a');
-      expect(paths[0]).toHaveProperty('b');
+      expect(paths[0]).toHaveProperty('points');
     });
 
     it('should parse visit locations correctly', () => {
       const result = TimelineParserFactory.parse(iosData);
-      const points = result.getPoints();
+      const points = result.points;
       const visitPoint = points[0];
       expect(visitPoint.lat).toBeCloseTo(47.620258, 5);
       expect(visitPoint.lon).toBeCloseTo(-122.356943, 5);
@@ -64,7 +63,7 @@ describe('Timeline Parser', () => {
 
     it('should parse activity start/end locations correctly', () => {
       const result = TimelineParserFactory.parse(iosData);
-      const points = result.getPoints();
+      const points = result.points;
       // Should have visit point + activity start + activity end + gap segment
       expect(points.length).toBeGreaterThanOrEqual(3);
     });
@@ -107,8 +106,8 @@ describe('Timeline Parser', () => {
       ];
 
       const result = TimelineParserFactory.parse(iosTimelinePathData);
-      const points = result.getPoints();
-      const paths = result.getPaths();
+      const points = result.points;
+      const paths = result.paths;
       
       // Parser returns all 5 raw points; dedup (removeDuplicates) is applied at the application layer
       expect(points.length).toBe(5);
@@ -124,8 +123,7 @@ describe('Timeline Parser', () => {
       
       // Verify paths have valid properties
       paths.forEach((path: any) => {
-        expect(path).toHaveProperty('a');
-        expect(path).toHaveProperty('b');
+        expect(path).toHaveProperty('points');
       });
     });
   });
@@ -190,7 +188,7 @@ describe('Timeline Parser', () => {
 
     it('should extract points from Android data', () => {
       const result = TimelineParserFactory.parse(androidData);
-      const points = result.getPoints();
+      const points = result.points;
       expect(points.length).toBeGreaterThan(0);
       expect(points[0]).toHaveProperty('lat');
       expect(points[0]).toHaveProperty('lon');
@@ -198,15 +196,14 @@ describe('Timeline Parser', () => {
 
     it('should extract segments from Android activities', () => {
       const result = TimelineParserFactory.parse(androidData);
-      const paths = result.getPaths();
+      const paths = result.paths;
       expect(paths.length).toBeGreaterThan(0);
-      expect(paths[0]).toHaveProperty('a');
-      expect(paths[0]).toHaveProperty('b');
+      expect(paths[0]).toHaveProperty('points');
     });
 
     it('should parse latLng format correctly', () => {
       const result = TimelineParserFactory.parse(androidData);
-      const points = result.getPoints();
+      const points = result.points;
       const visitPoint = points[0];
       expect(visitPoint.lat).toBeCloseTo(47.6202577, 5);
       expect(visitPoint.lon).toBeCloseTo(-122.3569428, 5);
@@ -214,7 +211,7 @@ describe('Timeline Parser', () => {
 
     it('should handle timelinePath entries', () => {
       const result = TimelineParserFactory.parse(androidData);
-      const points = result.getPoints();
+      const points = result.points;
       // Should include points from timelinePath
       expect(points.length).toBeGreaterThanOrEqual(5);
     });
@@ -315,8 +312,8 @@ describe('Timeline Parser', () => {
       };
 
       const result = TimelineParserFactory.parse(timelinePathData);
-      const points = result.getPoints();
-      const paths = result.getPaths();
+      const points = result.points;
+      const paths = result.paths;
       
       // Should parse all 16 points from the timelinePath
       expect(points.length).toBe(16);
@@ -341,14 +338,14 @@ describe('Timeline Parser', () => {
 
     it('should handle empty arrays', () => {
       const result = TimelineParserFactory.parse([]);
-      expect(result.getPoints()).toEqual([]);
-      expect(result.getPaths()).toEqual([]);
+      expect(result.points).toEqual([]);
+      expect(result.paths).toEqual([]);
     });
 
     it('should handle empty semanticSegments', () => {
       const result = TimelineParserFactory.parse({ semanticSegments: [] });
-      expect(result.getPoints()).toEqual([]);
-      expect(result.getPaths()).toEqual([]);
+      expect(result.points).toEqual([]);
+      expect(result.paths).toEqual([]);
     });
   });
 
@@ -366,7 +363,7 @@ describe('Timeline Parser', () => {
       ];
       
       const result = TimelineParserFactory.parse(testData);
-      const paths = result.getPaths();
+      const paths = result.paths;
       expect(paths.length).toBeGreaterThan(0);
     });
   });
