@@ -122,8 +122,7 @@ export class IOSTimelineParser implements ITimelineParser {
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
-        // Create paths between consecutive points in the path
-        const pathPoints: TimelinePoint[] = [];
+        const computedPoints: TimelinePoint[] = [];
         const ptsLen = curr.pathPoints.length;
         
         for (let j = 0; j < ptsLen; j++) {
@@ -131,12 +130,13 @@ export class IOSTimelineParser implements ITimelineParser {
           // Interpolate timestamp
           const fraction = ptsLen > 1 ? j / (ptsLen - 1) : 0;
           const pointTimestamp = startTimestamp + (endTimestamp - startTimestamp) * fraction;
-          
-          points.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
-          pathPoints.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
+          const pt = { lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp };
+          points.push(pt);
+          computedPoints.push(pt);
         }
-        if (pathPoints.length > 1) {
-          paths.push({ points: pathPoints });
+        // Create n-1 segment paths between consecutive points
+        for (let j = 1; j < computedPoints.length; j++) {
+          paths.push({ points: [computedPoints[j - 1], computedPoints[j]] });
         }
       } else {
         // Add start and end points
@@ -273,8 +273,7 @@ export class AndroidTimelineParser implements ITimelineParser {
 
       // If there are pathPoints, add all of them
       if (curr.pathPoints && curr.pathPoints.length > 0) {
-        // Create paths between consecutive points in the path
-        const pathPoints: TimelinePoint[] = [];
+        const computedPoints: TimelinePoint[] = [];
         const ptsLen = curr.pathPoints.length;
         
         for (let j = 0; j < ptsLen; j++) {
@@ -282,12 +281,13 @@ export class AndroidTimelineParser implements ITimelineParser {
           // Interpolate timestamp
           const fraction = ptsLen > 1 ? j / (ptsLen - 1) : 0;
           const pointTimestamp = startTimestamp + (endTimestamp - startTimestamp) * fraction;
-          
-          points.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
-          pathPoints.push({ lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp });
+          const pt = { lat: loc.lat, lon: loc.lon, timestamp: pointTimestamp };
+          points.push(pt);
+          computedPoints.push(pt);
         }
-        if (pathPoints.length > 1) {
-          paths.push({ points: pathPoints });
+        // Create n-1 segment paths between consecutive points
+        for (let j = 1; j < computedPoints.length; j++) {
+          paths.push({ points: [computedPoints[j - 1], computedPoints[j]] });
         }
       } else {
         // Add start and end points
