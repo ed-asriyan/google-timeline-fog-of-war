@@ -39,7 +39,7 @@ export interface Settings {
 }
 
 export interface MapApp {
-  loadPoints(data: string): Promise<LocationPoint | null>;
+  loadPoints(data: string, onProgress?: (status: 'parsing'|'saving', progress: number) => void): Promise<LocationPoint | null>;
   clear(): Promise<void>;
   getData(bounds: Bounds): Promise<Group>;
   getStatistics(bounds: Bounds): Promise<Statistics>;
@@ -48,8 +48,8 @@ export interface MapApp {
 }
 
 export interface MapSegmentRepository {
-  saveSegment(segment: MapSegment): Promise<void>;
-  loadSegment(id: number): Promise<MapSegment>;
+  saveSegments(segments: MapSegment[]): Promise<void>;
+  loadSegments(ids: number[]): Promise<MapSegment[]>;
   clear(): Promise<void>;
   hasData(): Promise<boolean>;
 }

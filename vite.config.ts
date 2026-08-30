@@ -83,6 +83,7 @@ export default defineConfig({
         ]
       },
       devOptions: {
+        suppressWarnings: true,
         enabled: true,
         type: 'module'
       }

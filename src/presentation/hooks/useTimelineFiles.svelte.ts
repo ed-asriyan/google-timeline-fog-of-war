@@ -30,8 +30,15 @@ export function createTimelineFiles(
         loadingState = { status: 'reading', progress: (filesProcessed / fileList.length) * 100 };
         const text = await file.text();
 
-        loadingState = { status: 'parsing', progress: ((filesProcessed + 0.5) / fileList.length) * 100 };
-        const point = await mapApp.loadPoints(text);
+        const baseProgress = (filesProcessed / fileList.length) * 100;
+        const fileShare = (1 / fileList.length) * 100;
+        const point = await mapApp.loadPoints(text, (status, p) => {
+          // p is 0-100 for the current file phase
+          // Wait, 'saving' goes from 10 to 100, we can just say:
+          if (status === 'saving') {
+            loadingState = { status: 'saving', progress: baseProgress + fileShare * (0.3 + 0.7 * (p / 100)) };
+          }
+        });
         if (point) lastPoint = point;
 
         filesProcessed++;

@@ -170,12 +170,18 @@ export class IOSTimelineParser implements ITimelineParser {
         const prev = entries[i - 1];
         const prevEndTime = prev.endTime ? new Date(prev.endTime).getTime() : new Date().getTime();
         if (prev.endLoc && curr.startLoc) {
-          paths.push({
-            points: [
-              { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
-              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp }
-            ]
-          });
+          const distance = Math.sqrt(
+            Math.pow(curr.startLoc.lat - prev.endLoc.lat, 2) + 
+            Math.pow(curr.startLoc.lon - prev.endLoc.lon, 2)
+          );
+          if (distance < 0.05) {
+            paths.push({
+              points: [
+                { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
+                { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp }
+              ]
+            });
+          }
         }
       }
     }
@@ -321,12 +327,18 @@ export class AndroidTimelineParser implements ITimelineParser {
         const prev = entries[i - 1];
         const prevEndTime = prev.endTime ? new Date(prev.endTime).getTime() : new Date().getTime();
         if (prev.endLoc && curr.startLoc) {
-          paths.push({
-            points: [
-              { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
-              { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp }
-            ]
-          });
+          const distance = Math.sqrt(
+            Math.pow(curr.startLoc.lat - prev.endLoc.lat, 2) + 
+            Math.pow(curr.startLoc.lon - prev.endLoc.lon, 2)
+          );
+          if (distance < 0.05) {
+            paths.push({
+              points: [
+                { lat: prev.endLoc.lat, lon: prev.endLoc.lon, timestamp: prevEndTime },
+                { lat: curr.startLoc.lat, lon: curr.startLoc.lon, timestamp: startTimestamp }
+              ]
+            });
+          }
         }
       }
     }

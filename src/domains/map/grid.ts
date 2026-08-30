@@ -50,23 +50,29 @@ export function getSegmentIdForPoint(point: TimelinePoint): number {
 export function getSegmentIdsForPath(path: { points: TimelinePoint[] }): number[] {
   if (path.points.length === 0) return [];
   
-  let minLat = path.points[0].lat;
-  let maxLat = path.points[0].lat;
-  let minLon = path.points[0].lon;
-  let maxLon = path.points[0].lon;
+  const ids = new Set<number>();
+  ids.add(getSegmentIdForPoint(path.points[0]));
 
   for (let i = 1; i < path.points.length; i++) {
-      const point = path.points[i];
-      if (point.lat < minLat) minLat = point.lat;
-      if (point.lat > maxLat) maxLat = point.lat;
-      if (point.lon < minLon) minLon = point.lon;
-      if (point.lon > maxLon) maxLon = point.lon;
+    const p1 = path.points[i - 1];
+    const p2 = path.points[i];
+    
+    const distLat = Math.abs(p2.lat - p1.lat);
+    const distLon = Math.abs(p2.lon - p1.lon);
+    const steps = Math.max(Math.ceil(distLat / 0.05), Math.ceil(distLon / 0.05), 1);
+    
+    for (let step = 1; step <= steps; step++) {
+      const f = step / steps;
+      const interpPoint = {
+        lat: p1.lat + (p2.lat - p1.lat) * f,
+        lon: p1.lon + (p2.lon - p1.lon) * f,
+        timestamp: 0 
+      };
+      ids.add(getSegmentIdForPoint(interpPoint as any));
+    }
   }
 
-  return getSegmentIdsForBound({
-      a: { lat: minLat, lon: minLon },
-      b: { lat: maxLat, lon: maxLon }
-  });
+  return Array.from(ids);
 }
 
 export function getSegmentIdForPoints(points: Iterable<TimelinePoint>): Record<number, TimelinePoint[]> {

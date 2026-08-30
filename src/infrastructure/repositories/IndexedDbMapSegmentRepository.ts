@@ -12,41 +12,73 @@ export class IndexedDbMapSegmentRepository implements MapSegmentRepository {
         this.db = db;
     }
 
-    async saveSegment(segment: MapSegment): Promise<void> {
-        const record = {
-            id: segment.index,
-            points: segment.group.points.map(p => ({ lat: p.lat, lon: p.lon, timestamp: p.timestamp })),
-            paths: segment.group.paths.map(p => ({ points: p.points.map(pt => ({ lat: pt.lat, lon: pt.lon, timestamp: pt.timestamp })) })),
-        };
+
+
+    async saveSegments(segments: MapSegment[]): Promise<void> {
+        if (segments.length === 0) return;
         return new Promise((resolve, reject) => {
             const tx = this.db.transaction(IndexedDbMapSegmentRepository.storeName, 'readwrite');
             const store = tx.objectStore(IndexedDbMapSegmentRepository.storeName);
-            const req = store.put(record);
-            req.onsuccess = () => resolve();
-            req.onerror = () => reject(req.error);
+            
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
+
+            for (const segment of segments) {
+                const record = {
+                    id: segment.index,
+                    points: segment.group.points.map(p => ({ lat: p.lat, lon: p.lon, timestamp: p.timestamp })),
+                    paths: segment.group.paths.map(p => ({ points: p.points.map(pt => ({ lat: pt.lat, lon: pt.lon, timestamp: pt.timestamp })) })),
+                };
+                store.put(record);
+            }
         });
     }
 
-    async loadSegment(id: number): Promise<MapSegment> {
+    async loadSegments(ids: number[]): Promise<MapSegment[]> {
+        if (ids.length === 0) return [];
         return new Promise((resolve, reject) => {
             const tx = this.db.transaction(IndexedDbMapSegmentRepository.storeName, 'readonly');
             const store = tx.objectStore(IndexedDbMapSegmentRepository.storeName);
-            const req = store.get(id);
-            req.onsuccess = () => {
-                const record = req.result;
-                if (!record) {
-                    resolve({ index: id, group: { points: [], paths: [] } });
-                    return;
+            // Always emit one entry per requested id (placeholder if missing), same contract as the old loadSegment.
+            const foundById = new Map<number, MapSegment>();
+
+            tx.oncomplete = () => resolve(ids.map(id => foundById.get(id) ?? { index: id, group: { points: [], paths: [] } }));
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error('Transaction aborted'));
+
+            if (ids.length > 10000) {
+                // If requesting too many IDs, it's faster to cursor through all existing data
+                // and check if they are in the requested set.
+                const idSet = new Set(ids);
+                const req = store.openCursor();
+                req.onsuccess = (event) => {
+                    const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
+                    if (cursor) {
+                        const record = cursor.value;
+                        if (idSet.has(record.id)) {
+                            foundById.set(record.id, {
+                                index: record.id,
+                                group: { points: record.points ?? [], paths: record.paths ?? [] }
+                            });
+                        }
+                        cursor.continue();
+                    }
+                };
+            } else {
+                for (const id of ids) {
+                    const req = store.get(id);
+                    req.onsuccess = () => {
+                        const record = req.result;
+                        if (record) {
+                            foundById.set(id, {
+                                index: record.id,
+                                group: { points: record.points ?? [], paths: record.paths ?? [] }
+                            });
+                        }
+                    };
                 }
-                const points = record.points ?? [];
-                const paths = record.paths ?? [];
-                
-                resolve({ 
-                    index: id, 
-                    group: { points, paths } 
-                });
-            };
-            req.onerror = () => reject(req.error);
+            }
         });
     }
 

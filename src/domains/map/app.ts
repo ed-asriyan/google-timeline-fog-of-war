@@ -32,7 +32,7 @@ export class Map implements MapApp {
     await this.settings.saveSettings(settings);
   }
 
-  async loadPoints(data: string): Promise<LocationPoint | null> {
+  async loadPoints(data: string, onProgress?: (status: 'parsing'|'saving', progress: number) => void): Promise<LocationPoint | null> {
     const group = this.parser.parse(data);
 
     let _last: TimelinePoint | null = null;
@@ -66,20 +66,24 @@ export class Map implements MapApp {
       ...Object.keys(pathsBySegment).map(Number)
     ]);
 
-    for (const segmentId of allSegmentIds) {
-      let segment = await this.segments.loadSegment(segmentId);
-      if (!segment) {
-        segment = { index: segmentId, group: { points: [], paths: [] } };
-      }
+        const allSegmentIdsArray = Array.from(allSegmentIds);
+    onProgress?.('saving', 10);
+    const loadedSegments = await this.segments.loadSegments(allSegmentIdsArray);
+
+    for (let i = 0; i < loadedSegments.length; i++) {
+      if (i % 100 === 0) onProgress?.('saving', 10 + (i / loadedSegments.length) * 80);
+      const segment = loadedSegments[i];
+      const segmentId = segment.index;
       
       const newPoints = pointsBySegment[segmentId] || [];
       const newPaths = pathsBySegment[segmentId] || [];
 
       segment.group.points.push(...newPoints);
       segment.group.paths.push(...newPaths);
-      
-      await this.segments.saveSegment(segment);
     }
+    
+    await this.segments.saveSegments(loadedSegments);
+    onProgress?.('saving', 100);
 
     return lastPoint;
   }
@@ -95,8 +99,8 @@ export class Map implements MapApp {
     const paths: TimelinePath[] = [];
     const seenPaths = new Set<string>();
 
-    for (const id of segmentIds) {
-      const segment = await this.segments.loadSegment(id);
+    const segments = await this.segments.loadSegments(segmentIds);
+    for (const segment of segments) {
       if (segment && segment.group) {
         if (segment.group.points) {
           points.push(...segment.group.points);
@@ -160,8 +164,8 @@ export class Map implements MapApp {
 
     const seenPaths = new Set<string>();
 
-    for (const id of segmentIds) {
-      const segment = await this.segments.loadSegment(id);
+    const segments = await this.segments.loadSegments(segmentIds);
+    for (const segment of segments) {
       if (segment && segment.group) {
         totalPoints += segment.group.points?.length || 0;
         
