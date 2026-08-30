@@ -1,7 +1,7 @@
 import { Bounds, TimelinePoint } from "./ports";
 
-export const LAT_STEP_COUNTS: number = 180;
-export const LON_STEP_COUNTS: number = 360;
+export const LAT_STEP_COUNTS: number = 1800;
+export const LON_STEP_COUNTS: number = 3600;
 
 export function getSegmentIdsForBound(bounds: Bounds): number[] {
   const ids = new Set<number>();
@@ -10,10 +10,10 @@ export function getSegmentIdsForBound(bounds: Bounds): number[] {
   const minLon = Math.min(bounds.a.lon, bounds.b.lon);
   const maxLon = Math.max(bounds.a.lon, bounds.b.lon);
 
-  let startLatIndex = Math.floor(minLat + 90);
-  let endLatIndex = Math.floor(maxLat + 90);
-  let startLonIndex = Math.floor(minLon + 180);
-  let endLonIndex = Math.floor(maxLon + 180);
+  let startLatIndex = Math.floor((minLat + 90) * 10);
+  let endLatIndex = Math.floor((maxLat + 90) * 10);
+  let startLonIndex = Math.floor((minLon + 180) * 10);
+  let endLonIndex = Math.floor((maxLon + 180) * 10);
 
   if (startLatIndex >= LAT_STEP_COUNTS) startLatIndex = LAT_STEP_COUNTS - 1;
   if (endLatIndex >= LAT_STEP_COUNTS) endLatIndex = LAT_STEP_COUNTS - 1;
@@ -35,8 +35,8 @@ export function getSegmentIdsForBound(bounds: Bounds): number[] {
 }
 
 export function getSegmentIdForPoint(point: TimelinePoint): number {
-  let latIndex = Math.floor(point.lat + 90);
-  let lonIndex = Math.floor(point.lon + 180);
+  let latIndex = Math.floor((point.lat + 90) * 10);
+  let lonIndex = Math.floor((point.lon + 180) * 10);
 
   if (latIndex >= LAT_STEP_COUNTS) latIndex = LAT_STEP_COUNTS - 1;
   if (lonIndex >= LON_STEP_COUNTS) lonIndex = LON_STEP_COUNTS - 1;
