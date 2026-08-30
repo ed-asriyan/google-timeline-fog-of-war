@@ -20,6 +20,7 @@
   } = $props();
 
   // State management through composables
+  // svelte-ignore state_referenced_locally
   const files = createTimelineFiles(mapApp, mapSegmentRepository, (lat, lon) => {
     mapView?.flyToLocation(lat, lon, 12);
   });

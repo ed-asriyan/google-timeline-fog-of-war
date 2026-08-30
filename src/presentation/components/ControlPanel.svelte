@@ -4,13 +4,7 @@
   import type { FogSettings } from '../../infrastructure/repositories/UISettingsRepository';
   import { analytics } from '../../infrastructure/analytics';
 
-  let {
-    settings,
-    onRadiusChange,
-    onToggleRoads,
-    onMaxLinkDistanceChange,
-    onMaxVelocityChange,
-  }: {
+  let props: {
     settings: FogSettings;
     onRadiusChange: (radius: number) => void;
     onToggleRoads: () => void;
@@ -18,9 +12,15 @@
     onMaxVelocityChange: (velocity: number) => void;
   } = $props();
 
-  let localRadius = $state(settings.radius);
-  let localPathLength = $state(settings.pathLengthKm);
-  let localPathVelocity = $state(settings.pathVelocityKmh);
+  let settings = $derived(props.settings);
+  let onRadiusChange = $derived(props.onRadiusChange);
+  let onToggleRoads = $derived(props.onToggleRoads);
+  let onMaxLinkDistanceChange = $derived(props.onMaxLinkDistanceChange);
+  let onMaxVelocityChange = $derived(props.onMaxVelocityChange);
+
+  let localRadius = $state(0);
+  let localPathLength = $state(0);
+  let localPathVelocity = $state(0);
 
   $effect(() => {
     localRadius = settings.radius;
