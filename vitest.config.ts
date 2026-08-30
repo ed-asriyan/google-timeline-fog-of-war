@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react()] as any,
+  plugins: [svelte()] as any,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

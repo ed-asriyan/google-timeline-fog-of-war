@@ -1,6 +1,5 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
+import { mount } from 'svelte'
+import App from './App.svelte'
 import 'leaflet/dist/leaflet.css'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
@@ -16,7 +15,6 @@ analytics.init();
 
 // Register service worker for PWA functionality
 registerSW({
-// ... (skipping SW registration detail limit)
   immediate: true,
   onNeedRefresh() {
     console.log('New content available, please refresh.');
@@ -46,15 +44,14 @@ if ('serviceWorker' in navigator) {
 // Create infrastructure and application objects, then render
 IndexedDbMapSegmentRepository.openDb().then(mapSegmentRepository => {
   const mapSettingsRepository = new MapSettingsRepository();
-  
+
   const parser = new TimelineParserFactory();
   const mapApp = new MapApp(mapSegmentRepository, parser, mapSettingsRepository);
 
-  ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-      <App mapApp={mapApp} mapSegmentRepository={mapSegmentRepository} />
-    </React.StrictMode>,
-  );
+  mount(App, {
+    target: document.getElementById('root')!,
+    props: { mapApp, mapSegmentRepository },
+  });
 }).catch(err => {
   console.error('Failed to initialize app:', err);
   alert('Failed to initialize app. Error: ' + err);

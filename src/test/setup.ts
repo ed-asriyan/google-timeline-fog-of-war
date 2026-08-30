@@ -1,1 +1,2 @@
-import '@testing-library/jest-dom';
+// Test setup (Svelte). Add global test configuration here.
+export {};
