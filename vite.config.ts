@@ -59,7 +59,7 @@ export default defineConfig({
             files: [
               {
                 name: 'files',
-                accept: ['application/json', '.json']
+                accept: ['application/json', '.json', 'application/gpx+xml', '.gpx']
               }
             ]
           }
