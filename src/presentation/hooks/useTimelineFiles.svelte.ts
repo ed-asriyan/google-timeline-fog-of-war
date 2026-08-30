@@ -8,7 +8,11 @@ export type LoadingState = {
   progress?: number;
 };
 
-export function createTimelineFiles(mapApp: MapApp, mapSegmentRepo: MapSegmentRepository) {
+export function createTimelineFiles(
+  mapApp: MapApp,
+  mapSegmentRepo: MapSegmentRepository,
+  onLastPoint?: (lat: number, lon: number) => void,
+) {
   let dataVersion = $state(0);
   let hasData = $state(false);
   let loadingState = $state<LoadingState>({ status: 'idle' });
@@ -21,18 +25,21 @@ export function createTimelineFiles(mapApp: MapApp, mapSegmentRepo: MapSegmentRe
     loadingState = { status: 'reading', progress: 0 };
     try {
       let filesProcessed = 0;
+      let lastPoint: { lat: number; lon: number } | null = null;
       for (const file of fileList) {
         loadingState = { status: 'reading', progress: (filesProcessed / fileList.length) * 100 };
         const text = await file.text();
 
         loadingState = { status: 'parsing', progress: ((filesProcessed + 0.5) / fileList.length) * 100 };
-        await mapApp.loadPoints(text);
+        const point = await mapApp.loadPoints(text);
+        if (point) lastPoint = point;
 
         filesProcessed++;
       }
 
       dataVersion += 1;
       hasData = true;
+      if (lastPoint) onLastPoint?.(lastPoint.lat, lastPoint.lon);
       analytics.track('Files Processed', { fileCount: fileList.length });
     } catch (error) {
       console.error('Failed to upload files:', error);

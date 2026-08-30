@@ -1,5 +1,6 @@
 import {
   Bounds,
+  LocationPoint,
   MapApp,
   MapSegmentRepository,
   ParserPort,
@@ -31,9 +32,20 @@ export class Map implements MapApp {
     await this.settings.saveSettings(settings);
   }
 
-  async loadPoints(data: string): Promise<void> {
+  async loadPoints(data: string): Promise<LocationPoint | null> {
     const group = this.parser.parse(data);
-    
+
+    let _last: TimelinePoint | null = null;
+    for (const p of group.points) {
+      if (!_last || p.timestamp > _last.timestamp) _last = p;
+    }
+    for (const path of group.paths) {
+      for (const p of path.points) {
+        if (!_last || p.timestamp > _last.timestamp) _last = p;
+      }
+    }
+    const lastPoint: LocationPoint | null = _last !== null ? { lat: _last.lat, lon: _last.lon } : null;
+
     // Group paths by segment
     const pathsBySegment: Record<number, typeof group.paths> = {};
     for (const path of group.paths) {
@@ -68,6 +80,8 @@ export class Map implements MapApp {
       
       await this.segments.saveSegment(segment);
     }
+
+    return lastPoint;
   }
 
   async clear(): Promise<void> {

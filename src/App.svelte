@@ -20,7 +20,9 @@
   } = $props();
 
   // State management through composables
-  const files = createTimelineFiles(mapApp, mapSegmentRepository);
+  const files = createTimelineFiles(mapApp, mapSegmentRepository, (lat, lon) => {
+    mapView?.flyToLocation(lat, lon, 12);
+  });
   const fog = createFogSettings();
   const vp = createMapViewport();
 

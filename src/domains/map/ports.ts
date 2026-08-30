@@ -39,7 +39,7 @@ export interface Settings {
 }
 
 export interface MapApp {
-  loadPoints(data: string): Promise<void>;
+  loadPoints(data: string): Promise<LocationPoint | null>;
   clear(): Promise<void>;
   getData(bounds: Bounds): Promise<Group>;
   getStatistics(bounds: Bounds): Promise<Statistics>;
