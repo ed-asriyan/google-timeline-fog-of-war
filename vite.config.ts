@@ -10,7 +10,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Google Timeline Fog of War',
+        name: 'Timeline Fog of War',
         short_name: 'Timeline FOW',
         description: 'Gamify your travel history by revealing places you have visited',
         start_url: '/',

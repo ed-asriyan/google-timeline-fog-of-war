@@ -99,7 +99,7 @@
       {:else}
         <span class="flex items-center gap-2">
           <Plus class="w-4 h-4" />
-          Add Google Timeline files
+          Add location files
         </span>
       {/if}
     </label>
@@ -110,8 +110,8 @@
       <Database class="w-3 h-3 flex-shrink-0" />
       <span>Your data is <b>never</b> uploaded to any server</span>
     </p>
-    <div>
-      <span>Export Google Timeline files:</span>
+    <div class="text-center leading-tight max-w-[90%] mx-auto opacity-75">
+      <span>Supports GPX and Google Timeline (.json):</span>
       &nbsp;
       <a
         href="https://support.google.com/maps/answer/6258979?co=GENIE.Platform%3DAndroid&oco=1#androidimport"
