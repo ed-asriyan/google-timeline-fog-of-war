@@ -50,8 +50,8 @@
   }
 
   const processingLabel = $derived(
-    loadingState.status === 'parsing'
-      ? `Parsing locations... ${loadingState.progress}%`
+    loadingState.status === 'parsing' && loadingState.progress !== undefined
+      ? `Parsing locations... ${Math.round(loadingState.progress)}%`
       : 'Loading files...'
   );
 </script>
