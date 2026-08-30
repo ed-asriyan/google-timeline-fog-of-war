@@ -63,7 +63,7 @@
       type="file"
       id="file-upload"
       multiple
-      accept=".json"
+      accept=".json,.gpx"
       onchange={handleChange}
       disabled={isProcessing}
       class="hidden"

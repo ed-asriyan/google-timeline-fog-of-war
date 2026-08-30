@@ -329,6 +329,95 @@ describe('Timeline Parser', () => {
     });
   });
 
+  describe('GPX Format', () => {
+    const gpxData = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Test">
+  <trk>
+    <name>Test Track</name>
+    <trkseg>
+      <trkpt lat="47.620258" lon="-122.356943">
+        <ele>10.0</ele>
+        <time>2024-10-05T14:00:00Z</time>
+      </trkpt>
+      <trkpt lat="47.621000" lon="-122.357500">
+        <ele>12.0</ele>
+        <time>2024-10-05T14:05:00Z</time>
+      </trkpt>
+      <trkpt lat="47.622000" lon="-122.358000">
+        <time>2024-10-05T14:10:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+  <wpt lat="47.619000" lon="-122.355000">
+    <time>2024-10-05T13:00:00Z</time>
+    <name>Waypoint</name>
+  </wpt>
+</gpx>`;
+
+    it('should detect GPX format', () => {
+      expect(TimelineParserFactory.detectFormat(gpxData)).toBe('gpx');
+    });
+
+    it('should not detect JSON as GPX', () => {
+      expect(TimelineParserFactory.detectFormat([{ visit: { topCandidate: { placeLocation: 'geo:1,2' } } }])).not.toBe('gpx');
+    });
+
+    it('should extract track points', () => {
+      const result = TimelineParserFactory.parse(gpxData);
+      // 3 track points + 1 waypoint
+      expect(result.points.length).toBe(4);
+    });
+
+    it('should parse coordinates correctly', () => {
+      const result = TimelineParserFactory.parse(gpxData);
+      expect(result.points[0].lat).toBeCloseTo(47.620258, 5);
+      expect(result.points[0].lon).toBeCloseTo(-122.356943, 5);
+    });
+
+    it('should parse timestamps correctly', () => {
+      const result = TimelineParserFactory.parse(gpxData);
+      expect(result.points[0].timestamp).toBe(new Date('2024-10-05T14:00:00Z').getTime());
+    });
+
+    it('should create paths between consecutive track points', () => {
+      const result = TimelineParserFactory.parse(gpxData);
+      // 3 track points → 2 segments
+      expect(result.paths.length).toBe(2);
+    });
+
+    it('should not create paths for waypoints', () => {
+      const wptOnlyGpx = `<gpx version="1.1"><wpt lat="1.0" lon="2.0"><time>2024-01-01T00:00:00Z</time></wpt></gpx>`;
+      const result = TimelineParserFactory.parse(wptOnlyGpx);
+      expect(result.points.length).toBe(1);
+      expect(result.paths.length).toBe(0);
+    });
+
+    it('should handle multiple track segments independently', () => {
+      const multiSegGpx = `<gpx version="1.1">
+        <trk>
+          <trkseg>
+            <trkpt lat="1.0" lon="1.0"><time>2024-01-01T00:00:00Z</time></trkpt>
+            <trkpt lat="1.1" lon="1.1"><time>2024-01-01T00:01:00Z</time></trkpt>
+          </trkseg>
+          <trkseg>
+            <trkpt lat="2.0" lon="2.0"><time>2024-01-01T01:00:00Z</time></trkpt>
+            <trkpt lat="2.1" lon="2.1"><time>2024-01-01T01:01:00Z</time></trkpt>
+          </trkseg>
+        </trk>
+      </gpx>`;
+      const result = TimelineParserFactory.parse(multiSegGpx);
+      expect(result.points.length).toBe(4);
+      expect(result.paths.length).toBe(2);
+    });
+
+    it('should return empty result for invalid XML', () => {
+      const result = TimelineParserFactory.parse('<gpx><broken>');
+      // parsererror or empty — should not throw
+      expect(result).toHaveProperty('points');
+      expect(result).toHaveProperty('paths');
+    });
+  });
+
   describe('Format Detection', () => {
     it('should detect unknown format for invalid data', () => {
       expect(TimelineParserFactory.detectFormat(null)).toBe('unknown');

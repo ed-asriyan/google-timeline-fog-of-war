@@ -8,7 +8,7 @@ import {
   ParserPort 
 } from '@/domains/map/ports';
 
-export type TimelineFormat = 'ios' | 'android' | 'unknown';
+export type TimelineFormat = 'ios' | 'android' | 'gpx' | 'unknown';
 
 interface TimelineEntry {
   startTime?: string;
@@ -336,10 +336,66 @@ export class AndroidTimelineParser implements ITimelineParser {
 }
 
 /**
+ * Parser for GPX (GPS Exchange Format) files
+ */
+export class GPXTimelineParser implements ITimelineParser {
+  canParse(data: any): boolean {
+    if (typeof data !== 'string') return false;
+    return data.trimStart().includes('<gpx');
+  }
+
+  parse(data: any): TimelineGroup {
+    if (typeof data !== 'string') return { points: [], paths: [] };
+
+    const domParser = new DOMParser();
+    const doc = domParser.parseFromString(data, 'application/xml');
+
+    if (doc.querySelector('parsererror')) return { points: [], paths: [] };
+
+    const points: TimelinePoint[] = [];
+    const paths: TimelinePath[] = [];
+
+    // Parse track segments
+    for (const seg of doc.querySelectorAll('trkseg')) {
+      const segPoints: TimelinePoint[] = [];
+      for (const trkpt of seg.querySelectorAll('trkpt')) {
+        const pt = this.parseTrackPoint(trkpt);
+        if (pt) { points.push(pt); segPoints.push(pt); }
+      }
+      for (let i = 1; i < segPoints.length; i++) {
+        paths.push({ points: [segPoints[i - 1], segPoints[i]] });
+      }
+    }
+
+    // Parse standalone waypoints
+    for (const wpt of doc.querySelectorAll('wpt')) {
+      const pt = this.parseTrackPoint(wpt);
+      if (pt) points.push(pt);
+    }
+
+    return { points, paths };
+  }
+
+  private parseTrackPoint(el: Element): TimelinePoint | null {
+    const lat = parseFloat(el.getAttribute('lat') ?? '');
+    const lon = parseFloat(el.getAttribute('lon') ?? '');
+    if (isNaN(lat) || isNaN(lon)) return null;
+
+    const timeEl = el.querySelector('time');
+    const timestamp = timeEl?.textContent
+      ? new Date(timeEl.textContent).getTime()
+      : Date.now();
+
+    return { lat, lon, timestamp };
+  }
+}
+
+/**
  * Factory for creating appropriate parser
  */
 export class TimelineParserFactory implements ParserPort {
   private static parsers: ITimelineParser[] = [
+    new GPXTimelineParser(),
     new IOSTimelineParser(),
     new AndroidTimelineParser(),
   ];
@@ -368,6 +424,7 @@ export class TimelineParserFactory implements ParserPort {
     }
     if (new IOSTimelineParser().canParse(data)) return 'ios';
     if (new AndroidTimelineParser().canParse(data)) return 'android';
+    if (new GPXTimelineParser().canParse(data)) return 'gpx';
     return 'unknown';
   }
 }
